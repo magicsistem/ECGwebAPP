@@ -1,693 +1,961 @@
+
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Aprendizaje de Ritmos Cardíacos</title>
+    <title>Cardiac Rhythm Learning Interface</title>
     <style>
         :root {
-            --primary: #2c3e50;
-            --secondary: #3498db;
-            --accent: #e74c3c;
-            --light: #ecf0f1;
-            --dark: #2c3e50;
-            --success: #27ae60;
-            --warning: #f39c12;
-            --danger: #e74c3c;
+            --primary-red: #d32f2f;
+            --dark-red: #b71c1c;
+            --light-red: #ffcdd2;
+            --ecg-green: #00c853;
+            --text-dark: #212121;
+            --text-light: #f5f5f5;
+            --bg-light: #fafafa;
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Montserrat', 'Segoe UI', sans-serif;
+            line-height: 1.6;
             margin: 0;
             padding: 0;
-            background-color: #f5f7fa;
-            color: #333;
-            line-height: 1.6;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="20" viewBox="0 0 100 20" preserveAspectRatio="none" opacity="0.05"><path d="M0,10 L5,8 L10,12 L15,6 L20,14 L25,4 L30,16 L35,2 L40,18 L45,0 L50,20 L55,0 L60,18 L65,2 L70,16 L75,4 L80,14 L85,6 L90,12 L95,8 L100,10" stroke="%23d32f2f" fill="none" stroke-width="0.5"/></svg>');
         }
         
         .container {
+            display: flex;
             max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
+            margin: 20px auto;
+            background-color: white;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
         }
         
-        header {
-            background-color: var(--primary);
-            color: white;
-            padding: 20px 0;
-            text-align: center;
-            border-radius: 8px 8px 0 0;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        .container::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, var(--primary-red), var(--dark-red));
+            z-index: 10;
+        }
+        
+        .sidebar {
+            width: 250px;
+            background-color: white;
+            padding: 20px;
+            border-right: 1px solid #e0e0e0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .sidebar::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 30px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="30" viewBox="0 0 100 30" preserveAspectRatio="none"><path d="M0,15 L5,13 L10,17 L15,11 L20,19 L25,9 L30,21 L35,7 L40,23 L45,5 L50,25 L55,5 L60,23 L65,7 L70,21 L75,9 L80,19 L85,11 L90,17 L95,13 L100,15" stroke="%23d32f2f" fill="none" stroke-width="1"/></svg>');
+            opacity: 0.1;
+        }
+        
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            background-color: white;
         }
         
         h1, h2, h3, h4 {
-            color: var(--primary);
-            margin-top: 0;
+            color: var(--dark-red);
+            font-weight: 700;
         }
         
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-        }
-        
-        h2 {
-            font-size: 2rem;
-            border-bottom: 2px solid var(--secondary);
-            padding-bottom: 10px;
-            margin-top: 40px;
-        }
-        
-        h3 {
-            font-size: 1.5rem;
-            color: var(--secondary);
-            margin-top: 30px;
-        }
-        
-        h4 {
-            font-size: 1.2rem;
-            color: var(--dark);
-        }
-        
-        .card {
+        .header {
             background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            color: var(--dark-red);
             padding: 25px;
-            margin-bottom: 30px;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-        
-        .ecg-display {
-            background-color: #000;
-            height: 200px;
-            border-radius: 5px;
-            position: relative;
-            overflow: hidden;
-            margin: 20px 0;
+            text-align: center;
+            margin-bottom: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-        
-        .ecg-line {
-            position: absolute;
-            height: 2px;
-            background-color: #00ff00;
-            width: 100%;
-            top: 50%;
-            animation: ecgAnimation 3s linear infinite;
-        }
-        
-        .ecg-placeholder {
-            color: #666;
-            font-style: italic;
-            text-align: center;
-        }
-        
-        .parameter-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-            font-size: 0.95rem;
-        }
-        
-        .parameter-table th, .parameter-table td {
-            border: 1px solid #ddd;
-            padding: 12px;
-            text-align: left;
-        }
-        
-        .parameter-table th {
-            background-color: var(--primary);
-            color: white;
-            font-weight: 600;
-        }
-        
-        .parameter-table tr:nth-child(even) {
-            background-color: #f8f9fa;
-        }
-        
-        .parameter-table tr:hover {
-            background-color: #e9ecef;
-        }
-        
-        .treatment-list {
-            list-style-type: none;
-            padding-left: 0;
-        }
-        
-        .treatment-list li {
-            padding: 10px 15px;
-            margin-bottom: 10px;
-            background-color: #f8f9fa;
-            border-left: 4px solid var(--secondary);
-            border-radius: 4px;
-        }
-        
-        .treatment-list li:hover {
-            background-color: #e9ecef;
-            border-left-color: var(--primary);
-        }
-        
-        .nav-tabs {
-            display: flex;
-            border-bottom: 1px solid #ddd;
-            margin-bottom: 20px;
-        }
-        
-        .nav-tab {
-            padding: 10px 20px;
-            cursor: pointer;
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
-            border-bottom: none;
-            margin-right: 5px;
-            border-radius: 5px 5px 0 0;
-            transition: all 0.3s ease;
-        }
-        
-        .nav-tab.active {
-            background-color: white;
-            border-bottom: 1px solid white;
-            margin-bottom: -1px;
-            font-weight: bold;
-            color: var(--primary);
-        }
-        
-        .nav-tab:hover:not(.active) {
-            background-color: #e9ecef;
-        }
-        
-        .tab-content {
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: block;
-        }
-        
-        .btn {
-            display: inline-block;
-            padding: 10px 20px;
-            background-color: var(--secondary);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
-            font-weight: 600;
-            transition: background-color 0.3s ease;
-        }
-        
-        .btn:hover {
-            background-color: #2980b9;
-        }
-        
-        .btn-danger {
-            background-color: var(--danger);
-        }
-        
-        .btn-danger:hover {
-            background-color: #c0392b;
-        }
-        
-        .btn-success {
-            background-color: var(--success);
-        }
-        
-        .btn-success:hover {
-            background-color: #219653;
-        }
-        
-        .alert {
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        
-        .alert-info {
-            background-color: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
-        
-        .alert-warning {
-            background-color: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeeba;
-        }
-        
-        .alert-danger {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 20px;
-            margin: 30px 0;
-        }
-        
-        @keyframes ecgAnimation {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-100%); }
-        }
-        
-        .search-bar {
-            margin: 20px 0;
+            border-bottom: 1px solid #e0e0e0;
             position: relative;
         }
         
-        .search-bar input {
+        .header::after {
+            content: "";
+            position: absolute;
+            bottom: -5px;
+            left: 25%;
+            right: 25%;
+            height: 3px;
+            background-color: var(--primary-red);
+        }
+        
+        .header img {
+            height: 70px;
+            width: auto;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        }
+        
+        .header h1 {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .header h1::after {
+            content: "❤";
+            position: absolute;
+            right: -25px;
+            top: -10px;
+            font-size: 1.2em;
+            color: var(--primary-red);
+            animation: heartbeat 1.5s infinite;
+        }
+        
+        @keyframes heartbeat {
+            0% { transform: scale(1); }
+            25% { transform: scale(1.1); }
+            50% { transform: scale(1); }
+            75% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .rhythm-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 20px;
+        }
+        
+        .rhythm-list li {
+            margin-bottom: 12px;
+            cursor: pointer;
+            padding: 12px 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            background-color: white;
+            border-left: 4px solid var(--primary-red);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .rhythm-list li::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            padding: 12px 20px;
-            border: 1px solid #ddd;
-            border-radius: 30px;
-            font-size: 1rem;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            height: 100%;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="20" viewBox="0 0 100 20" preserveAspectRatio="none" opacity="0.05"><path d="M0,10 L5,8 L10,12 L15,6 L20,14 L25,4 L30,16 L35,2 L40,18 L45,0 L50,20 L55,0 L60,18 L65,2 L70,16 L75,4 L80,14 L85,6 L90,12 L95,8 L100,10" stroke="%23d32f2f" fill="none" stroke-width="0.5"/></svg>');
+            opacity: 0;
+            transition: opacity 0.3s;
         }
         
-        .search-bar input:focus {
-            outline: none;
-            border-color: var(--secondary);
-            box-shadow: 0 2px 5px rgba(52, 152, 219, 0.3);
+        .rhythm-list li:hover {
+            transform: translateX(5px);
+            background-color: var(--light-red);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
         
-        footer {
-            text-align: center;
+        .rhythm-list li:hover::before {
+            opacity: 0.1;
+        }
+        
+        .rhythm-card {
+            display: none;
+            margin-bottom: 40px;
+            padding-bottom: 25px;
+            border-bottom: 1px dashed #e0e0e0;
+            position: relative;
+        }
+        
+        .rhythm-card::after {
+            content: "❤";
+            position: absolute;
+            bottom: -12px;
+            right: 0;
+            color: var(--light-red);
+            font-size: 1.5em;
+        }
+        
+        .active {
+            display: block;
+        }
+        
+        .ecg-image {
+            max-width: 100%;
+            height: auto;
+            margin: 25px 0;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            display: block;
+            background-color: white;
+            padding: 10px;
+        }
+        
+        .treatment {
+            background-color: var(--light-red);
             padding: 20px;
-            margin-top: 50px;
-            background-color: var(--primary);
+            border-radius: 8px;
+            margin-top: 25px;
+            border-left: 5px solid var(--primary-red);
+            position: relative;
+        }
+        
+        .treatment::before {
+            content: "⚠";
+            position: absolute;
+            left: -15px;
+            top: -15px;
+            background-color: var(--primary-red);
             color: white;
-            border-radius: 0 0 8px 8px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+        
+        .audio-player {
+            width: 100%;
+            margin: 25px 0;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            padding: 20px;
+            border-left: 5px solid var(--ecg-green);
+            position: relative;
+        }
+        
+        .audio-player::before {
+            content: "♫";
+            position: absolute;
+            left: -15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: var(--ecg-green);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+        
+        .audio-player h4 {
+            margin-top: 0;
+            color: var(--ecg-green);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .audio-player h4::before {
+            content: "";
+            display: inline-block;
+            width: 20px;
+            height: 15px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 15"><path d="M0,7 L3,7 L5,10 L8,4 L11,13 L14,1 L17,14 L20,7" stroke="%2300c853" fill="none" stroke-width="2"/></svg>');
+            background-repeat: no-repeat;
+        }
+        
+        .search-box {
+            margin-bottom: 25px;
+            position: relative;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 12px 15px 12px 40px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            background-color: white;
+            font-size: 14px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .search-box::before {
+            content: "🔍";
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary-red);
         }
         
         @media (max-width: 768px) {
-            .grid {
-                grid-template-columns: 1fr;
+            .container {
+                flex-direction: column;
             }
-            
-            h1 {
-                font-size: 2rem;
+            .sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid #e0e0e0;
             }
-            
-            h2 {
-                font-size: 1.7rem;
+            .header {
+                flex-direction: column;
+                text-align: center;
+                gap: 10px;
+            }
+            .header img {
+                margin-bottom: 10px;
+            }
+            .header h1::after {
+                right: 50%;
+                transform: translateX(50%);
+                top: -15px;
             }
         }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header>
-        <div class="container">
-            <h1>Sistema de Aprendizaje de Ritmos Cardíacos</h1>
-            <p>Una herramienta educativa completa para el estudio de electrocardiografía</p>
-        </div>
-    </header>
+    <div class="header">
+        <img src="https://i.postimg.cc/qRq24Q9P/cora.jpg" alt="Heart Icon">
+        <h1>Cardiac Rhythm Learning Interface</h1>
+    </div>
     
     <div class="container">
-        <div class="search-bar">
-            <input type="text" placeholder="Buscar ritmo cardíaco...">
+        <div class="sidebar">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search rhythms...">
+            </div>
+            <h3>Rhythm Categories</h3>
+            <ul class="rhythm-list">
+                <li onclick="showRhythm('regular-sinus')">Regular Sinus Rhythm</li>
+                <li onclick="showRhythm('sinus-bradycardia')">Sinus Bradycardia</li>
+                <li onclick="showRhythm('sinus-tachycardia')">Sinus Tachycardia</li>
+                <li onclick="showRhythm('sinus-arrhythmia')">Sinus Arrhythmia</li>
+                <li onclick="showRhythm('sinus-exit-block')">Sinus Exit Block</li>
+                <li onclick="showRhythm('sinus-arrest')">Sinus Arrest</li>
+                <li onclick="showRhythm('premature-atrial')">NSR with Premature Atrial Complexes</li>
+                <li onclick="showRhythm('svt')">Supraventricular Tachycardia</li>
+                <li onclick="showRhythm('afib')">Atrial Fibrillation</li>
+                <li onclick="showRhythm('aflutter')">Atrial Flutter</li>
+                <li onclick="showRhythm('paced-atrial')">Paced Atrial Rhythm</li>
+                <li onclick="showRhythm('first-degree')">NSR with First Degree AV Block</li>
+                <li onclick="showRhythm('second-degree-1')">Second Degree AV Block Type I</li>
+                <li onclick="showRhythm('second-degree-2')">Second Degree AV Block Type II</li>
+                <li onclick="showRhythm('second-degree-2-1')">Second Degree AV Block with 2:1 Conduction</li>
+                <li onclick="showRhythm('third-degree')">Third Degree AV Block</li>
+                <li onclick="showRhythm('pjc')">Premature Junctional Complex</li>
+                <li onclick="showRhythm('junctional-rhythm')">Junctional Rhythm</li>
+                <li onclick="showRhythm('accelerated-junctional')">Accelerated Junctional</li>
+                <li onclick="showRhythm('junctional-tachycardia')">Junctional Tachycardia</li>
+                <li onclick="showRhythm('wandering-pacemaker')">Wandering Pacemaker</li>
+                <li onclick="showRhythm('pvc')">Sinus Rhythm with Premature Ventricular Complex</li>
+                <li onclick="showRhythm('idioventricular')">Idioventricular Rhythm</li>
+                <li onclick="showRhythm('accelerated-idioventricular')">Accelerated Idioventricular Rhythm</li>
+                <li onclick="showRhythm('vtach')">Ventricular Tachycardia</li>
+                <li onclick="showRhythm('vfib')">Ventricular Fibrillation</li>
+                <li onclick="showRhythm('paced-ventricular')">Paced Ventricular Rhythm</li>
+            </ul>
         </div>
         
-        <div class="nav-tabs">
-            <div class="nav-tab active" onclick="openTab('sinus')">Ritmos Sinusales</div>
-            <div class="nav-tab" onclick="openTab('atrial')">Arritmias Atriales</div>
-            <div class="nav-tab" onclick="openTab('junctional')">Ritmos de la Unión</div>
-            <div class="nav-tab" onclick="openTab('ventricular')">Arritmias Ventriculares</div>
-            <div class="nav-tab" onclick="openTab('blocks')">Bloqueos AV</div>
-        </div>
-        
-        <!-- Sección de Ritmos Sinusales -->
-        <div id="sinus" class="tab-content active">
-            <h2>Ritmos Sinusales</h2>
-            
-            <!-- Ritmo Sinusal Normal -->
-            <div class="card">
-                <h3>Ritmo Sinusal Normal</h3>
-                <div class="ecg-display">
-                    <div class="ecg-line"></div>
-                    <div class="ecg-placeholder">Visualización de ECG de Ritmo Sinusal Normal</div>
+        <div class="main-content">
+            <!-- Regular Sinus Rhythm -->
+            <div id="regular-sinus" class="rhythm-card">
+                <h2>Regular Sinus Rhythm</h2>
+                <img src="https://i.postimg.cc/FHCrPDSX/Regular-Sinus-Rhythm.png" alt="Regular Sinus Rhythm ECG" class="ecg-image">
+                <p>The default heart rhythm. Pacemaking impulses arise from the sino-atrial node and are transmitted to the ventricles via the AV-node and His-Purkinje system. This results in a regular, narrow-complex heart rhythm at 60-100 bpm. Each QRS complex is preceded by a normal P wave. P waves upright in leads I and II, inverted in aVR. The PR interval remains constant.</p>
+                
+                <div class="audio-player">
+                    <h4>Audio Example:</h4>
+                    <audio controls preload="none">
+                        <source src="https://archive.org/download/ECG_Pathology/ritmo-sinusal.wav" type="audio/wav">
+                        Your browser does not support the audio element.
+                    </audio>
                 </div>
                 
-                <h4>Definición</h4>
-                <p>El ritmo cardíaco normal. Los impulsos de marcapasos surgen del nodo sinoauricular y se transmiten a los ventrículos a través del nodo AV y el sistema His-Purkinje. Esto resulta en un ritmo cardíaco regular, de complejo estrecho a 60-100 lpm. Cada complejo QRS está precedido por una onda P normal.</p>
-                
-                <h4>Características del ECG</h4>
-                <ul>
-                    <li>Ondas P positivas en derivaciones I y II, negativas en aVR</li>
-                    <li>Intervalo PR constante (0.12-0.20 seg)</li>
-                    <li>Frecuencia cardíaca 60-100 lpm</li>
-                    <li>Ritmo regular</li>
-                </ul>
-                
-                <h4>Tratamiento</h4>
-                <div class="alert alert-info">
-                    El Ritmo Sinusal Normal típicamente no requiere intervención médica específica. Las recomendaciones se centran en mantener la salud cardiovascular general a través de chequeos regulares, elecciones de estilo de vida saludable, monitoreo de factores de riesgo como presión arterial y colesterol, y cuidado preventivo proactivo para garantizar el bienestar cardíaco continuo.
+                <div class="treatment">
+                    <h3>Treatment</h3>
+                    <p>Regular Sinus Rhythm typically requires no specific medical intervention, with recommendations focusing on maintaining overall cardiovascular health through regular check-ups, healthy lifestyle choices, monitoring risk factors such as blood pressure and cholesterol, and proactive preventive care to ensure continued cardiac wellness.</p>
                 </div>
             </div>
             
-            <!-- Bradicardia Sinusal -->
-            <div class="card">
-                <h3>Bradicardia Sinusal</h3>
-                <div class="ecg-display">
-                    <div class="ecg-line" style="animation-duration: 4s;"></div>
-                    <div class="ecg-placeholder">Visualización de ECG de Bradicardia Sinusal</div>
+            <!-- Sinus Bradycardia -->
+            <div id="sinus-bradycardia" class="rhythm-card">
+                <h2>Sinus Bradycardia</h2>
+                <img src="https://i.postimg.cc/DfQ2V2Gg/Sinus-Bradycardia.png" alt="Sinus Bradycardia ECG" class="ecg-image">
+                <p>Sinus bradycardia is a heart rate of less than 60 beats per minute and originates from the sinus node (as the term "sinus" refers to the sinoatrial node). It has the following characteristics: Rate is less than 60 beats per minute, P Waves precede each QRS complex, PR interval is normal, QRS complex is normal, Conduction is normal, and Rhythm is regular.</p>
+                
+                <div class="audio-player">
+                    <h4>Audio Example:</h4>
+                    <audio controls preload="none">
+                        <source src="https://archive.org/download/ECG_Pathology/bradicardia-sinusal.wav" type="audio/wav">
+                        Your browser does not support the audio element.
+                    </audio>
                 </div>
                 
-                <h4>Definición</h4>
-                <p>Frecuencia cardíaca de menos de 60 latidos por minuto que se origina en el nodo sinusal. Tiene las siguientes características:</p>
-                
-                <h4>Características del ECG</h4>
-                <table class="parameter-table">
-                    <tr>
-                        <th>Parámetro</th>
-                        <th>Característica</th>
-                    </tr>
-                    <tr>
-                        <td>Frecuencia</td>
-                        <td>Menos de 60 lpm</td>
-                    </tr>
-                    <tr>
-                        <td>Ondas P</td>
-                        <td>Preceden cada complejo QRS</td>
-                    </tr>
-                    <tr>
-                        <td>Intervalo PR</td>
-                        <td>Normal (0.12-0.20 seg)</td>
-                    </tr>
-                    <tr>
-                        <td>Complejo QRS</td>
-                        <td>Normal</td>
-                    </tr>
-                    <tr>
-                        <td>Conducción</td>
-                        <td>Normal</td>
-                    </tr>
-                    <tr>
-                        <td>Ritmo</td>
-                        <td>Regular</td>
-                    </tr>
-                </table>
-                
-                <h4>Tratamiento</h4>
-                <div class="alert alert-warning">
-                    El manejo de la Bradicardia Sinusal implica evaluación exhaustiva de causas subyacentes, que pueden incluir revisión de medicamentos, abordaje de problemas tiroideos o metabólicos potenciales, y consideración de implante de marcapasos temporal o permanente si es sintomático, con monitoreo continuo de la frecuencia cardíaca, síntomas como fatiga o mareos, y ajuste potencial de los protocolos de tratamiento actuales.
+                <div class="treatment">
+                    <h3>Treatment</h3>
+                    <p>Management of Sinus Bradycardia involves comprehensive evaluation of underlying causes, which may include medication review, addressing potential thyroid or metabolic issues, and considering temporary or permanent pacemaker implantation if symptomatic, with ongoing monitoring of heart rate, symptoms like fatigue or dizziness, and potential adjustment of current treatment protocols.</p>
                 </div>
             </div>
             
-            <!-- Taquicardia Sinusal -->
-            <div class="card">
-                <h3>Taquicardia Sinusal</h3>
-                <div class="ecg-display">
-                    <div class="ecg-line" style="animation-duration: 1.5s;"></div>
-                    <div class="ecg-placeholder">Visualización de ECG de Taquicardia Sinusal</div>
+            <!-- Sinus Tachycardia -->
+            <div id="sinus-tachycardia" class="rhythm-card">
+                <h2>Sinus Tachycardia</h2>
+                <img src="https://i.postimg.cc/Jz0mBZ26/Sinus-Tachycardia.png" alt="Sinus Tachycardia ECG" class="ecg-image">
+                <p>Sinus tachycardia is a heart rate greater than 100 beats per minute originating from the sinus node. Characteristics: Rate of 100 to 180 beats per minute, P Waves precede each QRS complex, PR interval is normal, QRS complex is normal, Conduction is normal, and Rhythm is regular. Causes of sinus tachycardia may include exercise, anxiety, fever, drugs, anemia, heart failure, hypovolemia, and shock.</p>
+                
+                <div class="audio-player">
+                    <h4>Audio Example:</h4>
+                    <audio controls preload="none">
+                        <source src="https://archive.org/download/ECG_Pathology/taquicardia-sinusal.wav" type="audio/wav">
+                        Your browser does not support the audio element.
+                    </audio>
                 </div>
                 
-                <h4>Definición</h4>
-                <p>Frecuencia cardíaca mayor de 100 latidos por minuto que se origina en el nodo sinusal.</p>
-                
-                <h4>Características del ECG</h4>
-                <ul>
-                    <li>Frecuencia de 100 a 180 lpm</li>
-                    <li>Ondas P preceden cada complejo QRS</li>
-                    <li>Intervalo PR normal</li>
-                    <li>Complejo QRS normal</li>
-                    <li>Conducción normal</li>
-                    <li>Ritmo regular</li>
-                </ul>
-                
-                <h4>Causas</h4>
-                <p>Ejercicio, ansiedad, fiebre, fármacos, anemia, insuficiencia cardíaca, hipovolemia y shock.</p>
-                
-                <h4>Tratamiento</h4>
-                <div class="alert alert-info">
-                    El tratamiento para la Taquicardia Sinusal se centra en identificar y abordar las causas fundamentales como estrés, fiebre, anemia o hipertiroidismo, utilizando potencialmente betabloqueadores o bloqueadores de los canales de calcio para el manejo sintomático, implementando modificaciones de estilo de vida que incluyen reducción del estrés, hidratación y evitación de estimulantes, y realizando evaluaciones cardíacas regulares para prevenir posibles complicaciones.
+                <div class="treatment">
+                    <h3>Treatment</h3>
+                    <p>Treatment for Sinus Tachycardia centers on identifying and addressing root causes such as stress, fever, anemia, or hyperthyroidism, potentially utilizing beta-blockers or calcium channel blockers for symptomatic management, implementing lifestyle modifications including stress reduction, hydration, and avoiding stimulants, and conducting regular cardiac evaluations to prevent potential complications.</p>
                 </div>
             </div>
             
-            <!-- Más ritmos sinusales pueden agregarse aquí -->
-        </div>
-        
-        <!-- Sección de Arritmias Atriales -->
-        <div id="atrial" class="tab-content">
-            <h2>Arritmias Atriales</h2>
-            
-            <!-- Fibrilación Auricular -->
-            <div class="card">
-                <h3>Fibrilación Auricular</h3>
-                <div class="ecg-display">
-                    <div class="ecg-line" style="animation: irregularAnimation 3s linear infinite;"></div>
-                    <div class="ecg-placeholder">Visualización de ECG de Fibrilación Auricular</div>
+            <!-- Sinus Arrhythmia -->
+            <div id="sinus-arrhythmia" class="rhythm-card">
+                <h2>Sinus Arrhythmia</h2>
+                <img src="https://i.postimg.cc/rs9c5JTb/Sinus-Arrhythmia.png" alt="Sinus Arrhythmia ECG" class="ecg-image">
+                <p>Sinus rhythm with a beat-to-beat variation in the P-P interval (the time between successive P waves), producing an irregular ventricular rate. Variation in the P-P interval of more than 120 ms (3 small boxes). The P-P interval gradually lengthens and shortens in a cyclical fashion, usually corresponding to the phases of the respiratory cycle. Normal sinus P waves with a constant morphology. Constant P-R interval.</p>
+                
+                <div class="audio-player">
+                    <h4>Audio Example:</h4>
+                    <audio controls preload="none">
+                        <source src="https://archive.org/download/ECG_Pathology/arritmia-sinusal.wav" type="audio/wav">
+                        Your browser does not support the audio element.
+                    </audio>
                 </div>
                 
-                <h4>Definición</h4>
-                <p>Arritmia sostenida más común. Se caracteriza por actividad eléctrica auricular desorganizada y contracción. Las complicaciones incluyen inestabilidad hemodinámica, miocardiopatía, insuficiencia cardíaca y eventos embólicos como accidente cerebrovascular.</p>
-                
-                <h4>Características del ECG</h4>
-                <table class="parameter-table">
-                    <tr>
-                        <th>Parámetro</th>
-                        <th>Característica</th>
-                    </tr>
-                    <tr>
-                        <td>Ritmo</td>
-                        <td>Irregularmente irregular</td>
-                    </tr>
-                    <tr>
-                        <td>Ondas P</td>
-                        <td>Ausentes</td>
-                    </tr>
-                    <tr>
-                        <td>Línea de base</td>
-                        <td>Ausencia de línea isoeléctrica</td>
-                    </tr>
-                    <tr>
-                        <td>Frecuencia ventricular</td>
-                        <td>Variable</td>
-                    </tr>
-                    <tr>
-                        <td>Complejo QRS</td>
-                        <td>Generalmente < 120ms</td>
-                    </tr>
-                </table>
-                
-                <h4>Tratamiento</h4>
-                <div class="alert alert-warning">
-                    El tratamiento integral de la Fibrilación Auricular requiere un enfoque estratégico que involucre medicamentos para control de frecuencia y ritmo, terapia anticoagulante para prevenir accidentes cerebrovasculares, cardioversión potencial, ablación con catéter para casos refractarios, modificaciones del estilo de vida, manejo de condiciones subyacentes, monitoreo regular de anticoagulación y evaluación integral del riesgo de accidente cerebrovascular.
+                <div class="treatment">
+                    <h3>Treatment</h3>
+                    <p>Sinus Arrhythmia generally requires minimal intervention, with clinical approach focusing on comprehensive patient assessment, monitoring for significant symptoms, investigating potential respiratory or cardiac underlying conditions, and conducting regular cardiovascular check-ups to ensure patient health and rule out more serious cardiac complications.</p>
                 </div>
             </div>
             
-            <!-- Aleteo Auricular -->
-            <div class="card">
-                <h3>Aleteo Auricular</h3>
-                <div class="ecg-display">
-                    <div class="ecg-line" style="animation: flutterAnimation 3s linear infinite;"></div>
-                    <div class="ecg-placeholder">Visualización de ECG de Aleteo Auricular</div>
+            <!-- Sinus Exit Block -->
+            <div id="sinus-exit-block" class="rhythm-card">
+                <h2>Sinus Exit Block</h2>
+                <img src="https://i.postimg.cc/SNymkw7p/Sinus-Exit-Block.png" alt="Sinus Exit Block ECG" class="ecg-image">
+                <p>Sinoatrial exit block is due to failed propagation of pacemaker impulses beyond the SA node. The sinoatrial node continues to depolarise normally. However, some of the sinus impulses are "blocked" before they can leave the SA node, leading to intermittent failure of atrial depolarisation (dropped P waves). The patterns of conduction in the SA exit block are identical to the different types of AV block.</p>
+                
+                <div class="audio-player">
+                    <h4>Audio Example:</h4>
+                    <audio controls preload="none">
+                        <source src="https://archive.org/download/ECG_Pathology/bloqueo-salida-sinusal.wav" type="audio/wav">
+                        Your browser does not support the audio element.
+                    </audio>
                 </div>
                 
-                <h4>Definición</h4>
-                <p>Tipo de ritmo cardíaco anormal que ocurre cuando un cortocircuito en el corazón hace que las cámaras superiores (aurículas) bombeen muy rápidamente.</p>
-                
-                <h4>Tratamiento</h4>
-                <div class="treatment-list">
-                    <li>Se recomiendan medicamentos como betabloqueadores, bloqueadores de los canales de calcio o fármacos antiarrítmicos para controlar la frecuencia y el ritmo cardíaco.</li>
-                    <li>Los anticoagulantes se usan ampliamente para prevenir accidentes cerebrovasculares.</li>
-                    <li>Otra opción es la cardioversión o terapia de choque eléctrico, utilizada para restaurar el ritmo normal.</li>
-                    <li>Se sugieren recomendaciones como mantener un estilo de vida saludable, evitar el alcohol en exceso y monitorear síntomas como palpitaciones o mareos.</li>
-                </div>
-            </div>
-            
-            <!-- Más arritmias atriales pueden agregarse aquí -->
-        </div>
-        
-        <!-- Sección de Ritmos de la Unión -->
-        <div id="junctional" class="tab-content">
-            <h2>Ritmos de la Unión</h2>
-            
-            <!-- Ritmo de la Unión -->
-            <div class="card">
-                <h3>Ritmo de la Unión</h3>
-                <div class="ecg-display">
-                    <div class="ecg-line"></div>
-                    <div class="ecg-placeholder">Visualización de ECG de Ritmo de la Unión</div>
-                </div>
-                
-                <h4>Definición</h4>
-                <p>Un ritmo de la unión es un tipo de arritmia (latido cardíaco irregular). Si tiene un ritmo de la unión, el marcapasos natural de su corazón, conocido como nodo sinoauricular (SA), no funciona como debería.</p>
-                
-                <h4>Tratamiento</h4>
-                <div class="alert alert-info">
-                    No requiere tratamiento si es asintomático. Si hay síntomas como bradicardia, es importante abordar la causa subyacente, como isquemia miocárdica o toxicidad digitálica. En casos sintomáticos, se puede considerar el marcapasos. También es aconsejable evitar medicamentos que supriman el nodo AV en pacientes con síntomas. Se recomienda monitoreo regular para detectar enfermedad cardíaca estructural subyacente para garantizar un manejo adecuado.
+                <div class="treatment">
+                    <h3>Treatment</h3>
+                    <p>Management of Sinus Exit Block involves detailed cardiac evaluation to identify underlying causes, potential medication adjustments, consideration of pacemaker implantation for persistent cases, comprehensive electrophysiological consultation, and ongoing monitoring to prevent potential hemodynamic complications and ensure appropriate cardiac electrical conduction.</p>
                 </div>
             </div>
             
-            <!-- Taquicardia de la Unión -->
-            <div class="card">
-                <h3>Taquicardia de la Unión</h3>
-                <div class="ecg-display">
-                    <div class="ecg-line" style="animation-duration: 1.2s;"></div>
-                    <div class="ecg-placeholder">Visualización de ECG de Taquicardia de la Unión</div>
+            <!-- Sinus Arrest -->
+            <div id="sinus-arrest" class="rhythm-card">
+                <h2>Sinus Arrest</h2>
+                <img src="https://i.postimg.cc/kGCqVH0K/Sinus-Arrest.png" alt="Sinus Arrest ECG" class="ecg-image">
+                <p>Sudden absence of electrical activity initiated by the SA node. This results in a pause in the electrical activity seen on the tracing. The sinus pause rhythm typically will demonstrate constant R to R intervals prior to and following the pause. Sinus arrest is a pause in the generation of electrical impulses by the SA node. The sinus arrest pause is usually followed by a new sinus node beat or by an AV node escape beat.</p>
+                
+                <div class="audio-player">
+                    <h4>Audio Example:</h4>
+                    <audio controls preload="none">
+                        <source src="https://archive.org/download/ECG_Pathology/parada-sinusal.wav" type="audio/wav">
+                        Your browser does not support the audio element.
+                    </audio>
                 </div>
                 
-                <h4>Definición</h4>
-                <p>Una arritmia cardíaca que se origina en el nodo auriculoventricular (AV), que actúa como un marcapasos natural secundario cuando el nodo sinoauricular (SA) está dañado y no puede iniciar el latido cardíaco.</p>
-                
-                <h4>Tratamiento</h4>
-                <div class="alert alert-warning">
-                    La recuperación después de la ablación con catéter suele ser rápida. Se recomienda evitar el esfuerzo físico intenso durante varios días. El médico proporcionará instrucciones específicas según el caso particular de cada paciente. Para reducir el riesgo de desarrollar taquicardia de la unión, se pueden administrar ciertos medicamentos antes o durante la cirugía. Estos incluyen magnesio, propranolol y dexmedetomidina, este último utilizado en algunos niños alrededor de procedimientos quirúrgicos cardíacos.
-                </div>
-            </div>
-        </div>
-        
-        <!-- Sección de Arritmias Ventriculares -->
-        <div id="ventricular" class="tab-content">
-            <h2>Arritmias Ventriculares</h2>
-            
-            <!-- Taquicardia Ventricular -->
-            <div class="card">
-                <h3>Taquicardia Ventricular</h3>
-                <div class="ecg-display">
-                    <div class="ecg-line" style="animation-duration: 0.8s;"></div>
-                    <div class="ecg-placeholder">Visualización de ECG de Taquicardia Ventricular</div>
-                </div>
-                
-                <h4>Definición</h4>
-                <p>Arritmia caracterizada por latidos cardíacos rápidos que se originan en los ventrículos del corazón, lo que impide el bombeo eficiente de sangre oxigenada al cuerpo.</p>
-                
-                <h4>Tratamiento</h4>
-                <div class="treatment-list">
-                    <li>Ablación por radiofrecuencia: procedimiento mínimamente invasivo que destruye las células responsables de la arritmia.</li>
-                    <li>Implante de cardiodesfibrilador (ICD): detecta y corrige ritmos cardíacos peligrosos.</li>
-                    <li>Fármacos antiarrítmicos como sotalol, flecainida, propafenona y amiodarona para prevenir recurrencias.</li>
+                <div class="treatment">
+                    <h3>Treatment</h3>
+                    <p>Sinus Arrest requires immediate medical intervention, potentially including permanent pacemaker implantation, comprehensive cardiac and systemic condition evaluation, close monitoring of heart function, avoiding high-risk situations that could compromise hemodynamic stability, and regular specialized cardiological follow-up to manage potential recurrence and underlying pathology.</p>
                 </div>
             </div>
             
-            <!-- Fibrilación Ventricular -->
-            <div class="card">
-                <h3>Fibrilación Ventricular</h3>
-                <div class="ecg-display" style="background-color: #300;">
-                    <div class="ecg-line" style="animation: vfibAnimation 1s linear infinite; height: 4px; background-color: #f00;"></div>
-                    <div class="ecg-placeholder" style="color: #fff;">Visualización de ECG de Fibrilación Ventricular</div>
+            <!-- NSR with Premature Atrial Complexes -->
+            <div id="premature-atrial" class="rhythm-card">
+                <h2>NSR with Premature Atrial Complexes</h2>
+                <img src="https://i.postimg.cc/HWbLpwqb/NSR-with-Premature-Atrial-Complexes.png" alt="NSR with Premature Atrial Complexes ECG" class="ecg-image">
+                <p>A premature atrial complex (PAC) is a premature beat arising from ectopic pacemaking tissue within the atria. There is an abnormal P wave, usually followed by a normal QRS complex. AKA: Atrial ectopics, atrial extrasystoles, atrial premature beats, atrial premature depolarizations. Post-extrasystolic pauses may be present, PACs that reach the SA node may depolarise it, causing the SA node to be "reset", with a longer-than-normal interval before the next sinus beat arrives.</p>
+                
+                <div class="audio-player">
+                    <h4>Audio Example:</h4>
+                    <audio controls preload="none">
+                        <source src="https://archive.org/download/ECG_Pathology/nsr-con-pac.wav" type="audio/wav">
+                        Your browser does not support the audio element.
+                    </audio>
                 </div>
                 
-                <h4>Definición</h4>
-                <p>Arritmia peligrosa en la que las señales eléctricas desorganizadas hacen que los ventrículos del corazón se contraigan de manera caótica, impidiendo que la sangre sea bombeada efectivamente al resto del cuerpo.</p>
-                
-                <h4>Tratamiento</h4>
-                <div class="alert alert-danger">
-                    El tratamiento inmediato de la Fibrilación Ventricular es crucial y comienza con reanimación cardiopulmonar para mantener la circulación sanguínea, seguida de desfibrilación eléctrica para restaurar el ritmo cardíaco normal. Después de la estabilización, se pueden administrar fármacos antiarrítmicos para prevenir recurrencias y considerar el implante de un cardiodesfibrilador que monitorea y corrige ritmos cardíacos anormales.
-                </div>
-            </div>
-        </div>
-        
-        <!-- Sección de Bloqueos AV -->
-        <div id="blocks" class="tab-content">
-            <h2>Bloqueos Auriculoventriculares</h2>
-            
-            <!-- Bloqueo AV de Primer Grado -->
-            <div class="card">
-                <h3>Bloqueo AV de Primer Grado</h3>
-                <div class="ecg-display">
-                    <div class="ecg-line" style="animation: firstDegreeAnimation 3s linear infinite;"></div>
-                    <div class="ecg-placeholder">Visualización de ECG de Bloqueo AV de 1° Grado</div>
-                </div>
-                
-                <h4>Definición</h4>
-                <p>Condición de conducción anormalmente lenta a través del nodo AV. Se define por cambios en el ECG que incluyen un intervalo PR mayor de 0.20 sin interrupción de la conducción auricular a ventricular.</p>
-                
-                <h4>Tratamiento</h4>
-                <div class="alert alert-info">
-                    El bloqueo AV de primer grado generalmente no requiere tratamiento si el paciente está asintomático. Las causas reversibles, como efectos de medicamentos o desequilibrios electrolíticos, deben abordarse. Se recomienda monitoreo de rutina para detectar cualquier progresión a formas más avanzadas de bloqueo AV. Los seguimientos regulares pueden ayudar a manejar posibles complicaciones de manera efectiva.
+                <div class="treatment">
+                    <h3>Treatment</h3>
+                    <p>Treatment for NSR with Premature Atrial Complexes is typically conservative, focusing on lifestyle modifications such as reducing caffeine and alcohol intake, stress management techniques, potential use of beta-blockers for symptomatic relief, and regular cardiac monitoring to ensure these occasional extra heartbeats do not indicate more significant cardiac issues.</p>
                 </div>
             </div>
             
-            <!-- Bloqueo AV de Segundo Grado Tipo II -->
-            <div class="card">
-                <h3>Bloqueo AV de Segundo Grado Tipo II</h3>
-                <div class="ecg-display">
-                    <div class="ecg-line" style="animation: mobitzIIAnimation 3s linear infinite;"></div>
-                    <div class="ecg-placeholder">Visualización de ECG de Bloqueo AV de 2° Grado Tipo II</div>
+            <!-- Supraventricular Tachycardia -->
+            <div id="svt" class="rhythm-card">
+                <h2>Supraventricular Tachycardia</h2>
+                <img src="https://i.postimg.cc/SxP4Lj0y/Supraventricular-Tachycardia.png" alt="Supraventricular Tachycardia ECG" class="ecg-image">
+                <p>The term supraventricular tachycardia (SVT) refers to any tachydysrhythmia arising from above the level of the Bundle of His, and encompasses regular atrial, irregular atrial, and regular atrioventricular tachycardias.</p>
+                
+                <div class="audio-player">
+                    <h4>Audio Example:</h4>
+                    <audio controls preload="none">
+                        <source src="https://archive.org/download/ECG_Pathology/svt.wav" type="audio/wav">
+                        Your browser does not support the audio element.
+                    </audio>
                 </div>
                 
-                <h4>Definición</h4>
-                <p>En el Mobitz tipo II hay un intervalo PR constante a lo largo de la tira de ritmo tanto antes como después del latido auricular no conducido.</p>
-                
-                <h4>Tratamiento</h4>
-                <div class="alert alert-warning">
-                    El bloqueo AV de segundo grado Tipo II típicamente requiere el implante de un marcapasos permanente debido a su potencial de progresar a bloqueo cardíaco completo. Cualquier condición subyacente, como isquemia o desequilibrios electrolíticos, debe tratarse de inmediato. La intervención inmediata es crítica en estos casos, y se deben evitar los fármacos que bloquean el nodo AV.
+                <div class="treatment">
+                    <h3>Treatment</h3>
+                    <p>Management of Supraventricular Tachycardia involves a multi-faceted approach including acute episode management through vagal maneuvers, potential pharmacological interventions like adenosine, antiarrhythmic medications, consideration of catheter ablation for recurrent cases, patient education on episode recognition and management, and ongoing cardiac monitoring to prevent potential complications.</p>
                 </div>
             </div>
             
-            <!-- Bloqueo AV de Tercer Grado -->
-            <div class="card">
-                <h3>Bloqueo AV de Tercer Grado</h3>
-               <div class="ecg-display">
-    <img src="https://i.postimg.cc/FHCrPDSX/Regular-Sinus-Rhythm.png" alt="Ritmo Sinusal Normal" style="max-width: 100%; height: auto; border-radius: 5px;">
+            <!-- Atrial Fibrillation -->
+            <div id="afib" class="rhythm-card">
+                <h2>Atrial Fibrillation</h2>
+                <img src="https://i.postimg.cc/7YMbN3Xq/Atrial-Fibrillation.png" alt="Atrial Fibrillation ECG" class="ecg-image">
+                <p>Atrial fibrillation (AF) is the most common sustained arrhythmia. It is characterised by disorganised atrial electrical activity and contraction. The incidence and prevalence of AF is increasing. Lifetime risk over the age of 40 years is ~25%. Complications of AF include haemodynamic instability, cardiomyopathy, cardiac failure, and embolic events such as stroke. It is characterized by: Irregularly irregular rhythm, no P waves, absence of an isoelectric baseline, variable ventricular rate, QRS complexes usually < 120ms, unless pre-existing bundle branch block, accessory pathway, or rate-related aberrant conduction.</p>
+                
+                <div class="audio-player">
+                    <h4>Audio Example:</h4>
+                    <audio controls preload="none">
+                        <source src="https://archive.org/download/ECG_Pathology/fibrilacion-auricular.wav" type="audio/wav">
+                        Your browser does not support the audio element.
+                    </audio>
+                </div>
+                
+                <div class="treatment">
+                    <h3>Treatment</h3>
+                    <p>Comprehensive Atrial Fibrillation treatment requires a strategic approach involving rate and rhythm control medications, anticoagulation therapy to prevent stroke, potential cardioversion, catheter ablation for refractory cases, lifestyle modifications, management of underlying conditions, regular anticoagulation monitoring, and comprehensive stroke risk assessment.</p>
+                </div>
+            </div>
+            
+            <!-- Atrial Flutter -->
+            <div id="aflutter" class="rhythm-card">
+                <h2>Atrial Flutter</h2>
+                <img src="https://i.postimg.cc/q7gR09r7/Atrial-Flutter.png" alt="Atrial Flutter ECG" class="ecg-image">
+                <p>Atrial flutter is a type of abnormal heart rhythm, or arrhythmia. It occurs when a short circuit in the heart causes the upper chambers (atria) to pump very rapidly. Atrial flutter is important not only because of its symptoms but because it can cause a stroke that may result in permanent disability or death.</p>
+                
+                <div class="audio-player">
+                    <h4>Audio Example:</h4>
+                    <audio controls preload="none">
+                        <source src="https://archive.org/download/ECG_Pathology/flutter-auricular.wav" type="audio/wav">
+                        Your browser does not support the audio element.
+                    </audio>
+                </div>
+                
+                <div class="treatment">
+                    <h3>Treatment</h3>
+                    <p>When presenting atrial flutter medications like beta-blockers, calcium channel blockers, or antiarrhythmic drugs are recommended to control heart rate and rhythm. Anticoagulants are highly used to prevent stroke. Another treatment is cardioversion or electric shock therapy, used to restore normal rhythm. Suggested recommendations include maintaining a healthy lifestyle, avoid excessive alcohol, and monitoring for symptoms like palpitations or dizziness.</p>
+                </div>
+            </div>
+            
+            <!-- Paced Atrial Rhythm -->
+            <div id="paced-atrial" class="rhythm-card">
+                <h2>Paced Atrial Rhythm</h2>
+                <img src="https://i.postimg.cc/dtvVD7Fp/Paced-Atrial-rhythm.png" alt="Paced Atrial Rhythm ECG" class="ecg-image">
+                <p>Atrially paced patients often have evidence of 1st degree AV block or Wenckebach conduction on their paced ECG that is not apparent on their baseline tracing. This is because the sort of patients that require atrial pacing (e.g. post-op cardiac surgery) commonly have some degree of AV node dysfunction (e.g. due to age-related AV-nodal degeneration / their underlying cardiac condition / post-operative ischaemia / AV-nodal blocking drugs).</p>
+                
+                <div class="audio-player">
+                    <h4>Audio Example:</h4>
+                    <audio controls preload="none">
+                        <source src="https://archive.org/download/ECG_Pathology/auricular-con-marcapasos.wav" type="audio/wav">
+                        Your browser does not support the audio element.
+                    </audio>
+                </div>
+                
+                <div class="treatment">
+                    <h3>Treatment</h3>
+                    <p>Paced atrial rhythm typically requires no treatment if the pacing is effective and the patient is asymptomatic. Regular pacemaker checks should be performed to ensure proper functioning. In addition, the pacemaker programming should be assessed to optimize performance. Monitoring for any underlying rhythm disturbances that could affect the patient's condition is also recommended.</p>
+                </div>
+            </div>
+            
+            <!-- NSR with First Degree AV Block -->
+            <div id="first-degree" class="rhythm-card">
+                <h2>NSR with First Degree AV Block</h2>
+                <img src="https://i.postimg.cc/nrKV0x43/NSR-with-First-Degree-AV-Block.png" alt="NSR with First Degree AV Block ECG" class="ecg-image">
+                <p>First-degree atrioventricular (AV) block is a condition of abnormally slow conduction through the AV node. It is defined by electrocardiogram (ECG) changes that include a PR interval of greater than 0.20 without disruption of atrial to ventricular conduction. This condition is generally asymptomatic and discovered only on routine ECG.</p>
+                
+                <div class="audio-player">
+                    <h4>Audio Example:</h4>
+                    <audio controls preload="none">
+                        <source src="https://archive.org/download/ECG_Pathology/nsr-con-1avb.wav" type="audio/wav">
+                        Your browser does not support the audio element.
+                    </audio>
+                </div>
+                
+                <div class="treatment">
+                    <h3>Treatment</h3>
+                    <p>First-degree AV block usually does not require treatment if the patient is asymptomatic. Reversible causes, such as medication effects or electrolyte imbalances, should be addressed. Routine monitoring is advised to detect any progression to more advanced forms of AV block. Regular follow-ups can help manage potential complications effectively.</p>
+                </div>
+            </div>
+            
+            <!-- Second Degree AV Block Type I -->
+            <div id="second-degree-1" class="rhythm-card">
+                <h2>Second Degree AV Block Type I</h2>
+                <img src="https://i.postimg.cc/vm1QCf7g/Second-Degree-AV-Block-Type-I.png" alt="Second Degree AV Block Type I ECG" class="ecg-image">
+                <p>Type I block and type II second‐degree atrioventricular (AV) block are electrocardiographic (ECG) patterns that refer to the behavior of the P‐R intervals (in sinus rhythm) in sequences where a single P wave fails to conduct to the ventricles, provided there are ≥2 consecutive conducted P waves (ie, 3:2 AV block) to determine behavior of the P‐R interval.</p>
+                
+                <div class="audio-player">
+                    <h4>Audio Example:</h4>
+                    <audio controls preload="none">
+                        <source src="https://archive.org/download/ECG_Pathology/2-avb-tipo-1.wav" type="audio/wav">
+                        Your browser does not support the audio element.
+                    </audio>
+                </div>
+                
+                <div class="treatment">
+                    <h3>Treatment</h3>
+                    <p>For asymptomatic patients with second-degree AV block Type I, observation is often sufficient. Symptomatic cases, presenting with dizziness or syncope, may require temporary pacing or the placement of a permanent pacemaker. It is crucial to evaluate reversible causes, such as medication effects or myocardial ischemia, and to monitor the condition for progression over time.</p>
+                </div>
+            </div>
+            
+            <!-- Second Degree AV Block Type II -->
+            <div id="second-degree-2" class="rhythm-card">
+                <h2>Second Degree AV Block Type II</h2>
+                <img src="https://i.postimg.cc/tgLXbJDr/Second-Degree-AV-Block-Type-II.png" alt="Second Degree AV Block Type II ECG" class="ecg-image">
+                <p>In Mobitz type II there is a constant PR interval across the rhythm strip both before and after the non-conducted atrial beat. Each P wave is associated with a QRS complex until there is one atrial conduction or P wave that is not followed by a QRS. Mobitz type II is often a problem in the infra-nodal conduction system, and therefore, is associated with a widened QRS complex, bundle-branch block, or fascicular block.</p>
+                
+               <div class="audio-player">
+    <h4>Audio Example:</h4>
+    <audio controls preload="none">
+        <source src="https://archive.org/download/ECG_Pathology/2-avb-tipo-2.wav" type="audio/wav">
+        Your browser does not support the audio element.
+    </audio>
 </div>
 
-                
-                <h4>Definición</h4>
-                <p>También conocido como bloqueo cardíaco completo (CHB), es un ritmo cardíaco anormal que resulta de un defecto en el sistema de conducción cardíaca en el que no hay conducción a través del nodo AV, lo que lleva a una disociación completa de las aurículas y los ventrículos.</p>
-                
-                <h4>Características del ECG</h4>
-                <ul>
-                    <li>Intervalo P-P regular</li>
-                    <li>Intervalo R-R regular</li>
-                    <li>Falta de relación aparente entre las ondas P y los complejos QRS</li>
-                    <li>Hay más ondas P que complejos QRS</li>
-                </ul>
-                
-                <h4>Tratamiento</h4>
-                <div class="alert alert-danger">
-                    El bloqueo AV de tercer grado requiere atención inmediata, siendo el implante de marcapasos permanente el tratamiento estándar. Puede necesitarse marcapasos temporal en casos agudos o sintomáticos. Las causas reversibles, como isquemia miocárdica o efectos de medicamentos, deben identificarse y manejarse rápidamente. El cuidado de emergencia es crucial para pacientes sintomáticos, y se necesitan seguimientos regulares del marcapasos después del implante.
-                </div>
+                                 <div class="treatment">
+                <h3>Treatment</h3>
+                <p>Second-degree AV block Type II typically requires the implantation of a permanent pacemaker due to its potential to progress to complete heart block. Any underlying conditions, such as ischemia or electrolyte imbalances, should be treated promptly. Immediate intervention is critical in these cases, and AV node-blocking drugs should be avoided.</p>
+            </div>
+        </div>
+        
+        <!-- Second Degree AV Block with 2:1 Conduction -->
+<div id="second-degree-2-1" class="rhythm-card">
+    <h2>Second Degree AV Block with 2:1 Conduction</h2>
+    <img src="https://i.postimg.cc/LXLm8Sbm/Second-degree-AV-lock-with-intermittent-driving.png" alt="Second Degree AV Block with 2:1 Conduction ECG" class="ecg-image">
+    <p>2:1 atrioventricular block is a form of second-degree AV nodal block and occurs when every other P wave is not conducted through the AV node to get to the ventricles, and thus every other P wave is not followed by a QRS complex.</p>
+
+    <div class="audio-player">
+        <h4>Audio Example:</h4>
+        <audio controls preload="none">
+            <source src="https://archive.org/download/ECG_Pathology/2-avb-2-1.wav" type="audio/wav">
+            Your browser does not support the audio element.
+        </audio>
+    </div>
+
+    <div class="treatment">
+        <h3>Treatment</h3>
+        <p>Second-degree AV block with 2:1 conduction often necessitates the placement of a permanent pacemaker, particularly if the patient is symptomatic or the QRS complex is wide. It is important to evaluate and treat reversible causes, as well as to determine whether the block is Type I or Type II. Close monitoring is advised to prevent progression to a more severe block.</p>
+    </div>
+</div>
+
+        
+       <!-- Third Degree AV Block -->
+<div id="third-degree" class="rhythm-card">
+    <h2>Third Degree AV Block</h2>
+    <img src="https://i.postimg.cc/25BD0mmn/Third-Degree-AV-Block.png" alt="Third Degree AV Block ECG" class="ecg-image">
+    <p>Third-degree atrioventricular (AV) block, also referred to as third-degree heart block or complete heart block (CHB), is an abnormal heart rhythm resulting from a defect in the cardiac conduction system in which there is no conduction through the atrioventricular node (AVN), leading to complete dissociation of the atria and ventricles.</p>
+    <div class="audio-player">
+        <h4>Audio Example:</h4>
+        <audio controls preload="none">
+            <source src="https://archive.org/download/ECG_Pathology/3-avb.wav" type="audio/wav">
+            Your browser does not support the audio element.
+        </audio>
+    </div>
+    <div class="treatment">
+        <h3>Treatment</h3>
+        <p>Third-degree AV block requires immediate attention, with permanent pacemaker implantation being the standard treatment...</p>
+    </div>
+</div>
+
+        
+        <!-- Premature Junctional Complex (PJC) -->
+        <div id="pjc" class="rhythm-card">
+            <h2>Premature Junctional Complex (PJC)</h2>
+            <img src="https://i.postimg.cc/jSSqQGLh/Premature-Junctional-Complex-PJC.png" alt="Premature Junctional Complex ECG" class="ecg-image">
+            <p>A premature beat arising from an ectopic focus within the Atrioventricular (AV) junction. Groups of pacemaker cells throughout the conducting system are capable of spontaneous depolarisation. The rate of depolarisation decreases from top to bottom: fastest at the sinoatrial node; slowest within the ventricles. Ectopic impulses from subsidiary pacemakers are normally suppressed by more rapid impulses from above.</p>
+            
+            <div class="audio-player">
+                <h4>Audio Example:</h4>
+                <audio controls preload="none">
+                    <source src="https://archive.org/download/ECG_Pathology/pjc.wav" type="audio/wav">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+            
+            <div class="treatment">
+                <h3>Treatment</h3>
+                <p>Premature junctional complexes are often benign and do not require treatment if infrequent and asymptomatic. Lifestyle modifications, such as reducing caffeine intake and managing stress, can help minimize triggers. For frequent or symptomatic PJCs, Holter monitoring may be used to assess the frequency and impact of the arrhythmia. Reassurance is typically sufficient for benign cases.</p>
+            </div>
+        </div>
+        
+        <!-- Junctional Rhythm -->
+        <div id="junctional-rhythm" class="rhythm-card">
+            <h2>Junctional Rhythm</h2>
+            <img src="https://i.postimg.cc/gJZ2L8nF/Junctional-Rhythm.png" alt="Junctional Rhythm ECG" class="ecg-image">
+            <p>A junctional rhythm is a type of arrhythmia (irregular heartbeat). If you have a junctional rhythm, your heart's natural pacemaker, known as your sinoatrial (SA) node, isn't working as it should. The SA node sends electrical signals that control your heartbeat. When you have a junctional rhythm, your SA node stops working or sends signals that are too slow or weak.</p>
+            
+            <div class="audio-player">
+                <h4>Audio Example:</h4>
+                <audio controls preload="none">
+                    <source src="https://archive.org/download/ECG_Pathology/ritmo-juncional.wav" type="audio/wav">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+            
+            <div class="treatment">
+                <h3>Treatment</h3>
+                <p>Junctional rhythm requires no treatment if asymptomatic. If symptoms like bradycardia occur, addressing the underlying cause, such as myocardial ischemia or digitalis toxicity, is important. In symptomatic cases, pacing may be considered. It is also advisable to avoid medications that suppress the AV node in patients experiencing symptoms. Regular monitoring for underlying structural heart disease is recommended to ensure proper management.</p>
+            </div>
+        </div>
+        
+        <!-- Accelerated Junctional -->
+        <div id="accelerated-junctional" class="rhythm-card">
+            <h2>Accelerated Junctional</h2>
+            <img src="https://i.postimg.cc/2Sky91Xh/Accelerated-Junctional.png" alt="Accelerated Junctional ECG" class="ecg-image">
+            <p>Accelerated junctional rhythm (AJR) occurs when the rate of an AV junctional pacemaker exceeds that of the sinus node. This situation arises when there is increased automaticity in the AV node coupled with decreased automaticity in the sinus node.</p>
+            
+            <div class="audio-player">
+                <h4>Audio Example:</h4>
+                <audio controls preload="none">
+                    <source src="https://archive.org/download/ECG_Pathology/acelerado-juncional.wav" type="audio/wav">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+            
+            <div class="treatment">
+                <h3>Treatment</h3>
+                <p>AJR In most cases, it does not require specific treatment and is usually resolved by correcting triggering factors such as digoxin toxicity, electrolyte imbalances (hyperkalemia, hypomagnesemia) or myocardial infarction. If the patient is symptomatic, intravenous fluids can be administered to maintain blood pressure and, in some cases, beta-blockers or calcium channel blockers to reduce sympathetic activity. The use of atropine is not recommended, as it may increase AV node automaticity and worsen the arrhythmia.</p>
+            </div>
+        </div>
+        
+        <!-- Junctional Tachycardia -->
+        <div id="junctional-tachycardia" class="rhythm-card">
+            <h2>Junctional Tachycardia</h2>
+            <img src="https://i.postimg.cc/GtnhFtyB/Junctional-Tachycardia.png" alt="Junctional Tachycardia ECG" class="ecg-image">
+            <p>Junctional tachycardia is a cardiac arrhythmia originating in the atrioventricular (AV) node, which acts as a secondary natural pacemaker when the sinoatrial (SA) node is damaged and cannot initiate the heartbeat. Under normal conditions, the SA node initiates the electrical impulse that regulates normal sinus rhythm. However, if this node is damaged, the AV node can take over control of the heart rhythm.</p>
+            
+            <div class="audio-player">
+                <h4>Audio Example:</h4>
+                <audio controls preload="none">
+                    <source src="https://archive.org/download/ECG_Pathology/taquicardia-juncional.wav" type="audio/wav">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+            
+            <div class="treatment">
+                <h3>Treatment</h3>
+                <p>Recovery after catheter ablation is usually rapid. It is recommended to avoid strenuous physical exertion for several days. The physician will provide specific instructions according to each patient's particular case. To reduce the risk of developing junctional tachycardia, certain medications may be administered before or during surgery. These include magnesium, propranolol (Inderal® XL or InnoPran® XL), and dexmedetomidine, the latter used in some children around cardiac surgical procedures.</p>
+            </div>
+        </div>
+        
+        <!-- Wandering Pacemaker -->
+        <div id="wandering-pacemaker" class="rhythm-card">
+            <h2>Wandering Pacemaker</h2>
+            <img src="https://i.postimg.cc/qqpHB3KG/Wandering-Pacemaker.png" alt="Wandering Pacemaker ECG" class="ecg-image">
+            <p>Wandering atrial pacing is an arrhythmia in which multiple ectopic foci within the atrium generate consecutive electrical impulses that are conducted to the ventricles. The heart rate in this condition remains within a normal range, i.e., below 100 beats per minute. On the electrocardiogram, it is observed that each QRS complex is preceded by a P wave, but with different morphologies, since the impulses come from different atrial regions.</p>
+            
+            <div class="audio-player">
+                <h4>Audio Example:</h4>
+                <audio controls preload="none">
+                    <source src="https://archive.org/download/ECG_Pathology/marcapasos-errante.wav" type="audio/wav">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+            
+            <div class="treatment">
+                <h3>Treatment</h3>
+                <p>Wandering atrial pacemaker is generally a benign and asymptomatic condition that does not require specific treatment. However, if symptoms persist or affect the patient's quality of life, beta-blockers may be considered to control the heart rate and alleviate discomfort. It is essential that any intervention be supervised by a healthcare professional, who will determine the most appropriate approach. In symptomatic cases, drugs such as beta-blockers, calcium channel blockers and antiarrhythmics may be used.</p>
+            </div>
+        </div>
+        
+        <!-- Sinus Rhythm with Premature Ventricular Complex -->
+        <div id="pvc" class="rhythm-card">
+            <h2>Sinus Rhythm with Premature Ventricular Complex</h2>
+            <img src="https://i.postimg.cc/fTBDLBBS/Sinus-Rhythm-with-Premature-Ventricular-Complex.png" alt="Sinus Rhythm with Premature Ventricular Complex ECG" class="ecg-image">
+            <p>Premature ventricular contractions (PVCs) are extra heartbeats that originate in the ventricles, the lower chambers of the heart, and occur before the normal expected heartbeat. These contractions disrupt the regular heart rhythm and may cause you to feel as if your heart has skipped a beat or is beating more forcefully. Although PVCs are common and generally harmless, they can cause symptoms such as palpitations or a feeling that the heart is beating irregularly.</p>
+            
+            <div class="audio-player">
+                <h4>Audio Example:</h4>
+                <audio controls preload="none">
+                    <source src="https://archive.org/download/ECG_Pathology/nsr-con-pvc.wav" type="audio/wav">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+            
+            <div class="treatment">
+                <h3>Treatment</h3>
+                <p>In this case, treatment is recommended to improve the quality of life. However, if the PVCs are very frequent, treatment is offered not only to improve quality of life but to prevent heart failure and, in some cases, to reverse heart failure. If the PVCs are of a more sustained nature (ventricular tachycardia), therapy is directed not only to reduce the PVC burden but also to manage a possible underlying abnormal cardiac substrate.</p>
+            </div>
+        </div>
+        
+        <!-- Idioventricular Rhythm (IVR) -->
+        <div id="idioventricular" class="rhythm-card">
+            <h2>Idioventricular Rhythm (IVR)</h2>
+            <img src="https://i.postimg.cc/hGwGGp41/Idioventricular-Rhythm-IVR.png" alt="Idioventricular Rhythm ECG" class="ecg-image">
+            <p>Idioventricular rhythm is a regular, slow ventricular rhythm, with a rate of less than 50 beats per minute, absence of P waves and a prolonged QRS interval. When the sinoatrial node is blocked or depressed, the latent pacemakers are activated to generate a rhythm secondary to the increased activity and produce escape beats that may be atrial, junctional or ventricular.</p>
+            
+            <div class="audio-player">
+                <h4>Audio Example:</h4>
+                <audio controls preload="none">
+                    <source src="https://archive.org/download/ECG_Pathology/ritmo-idioventricular.wav" type="audio/wav">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+            
+            <div class="treatment">
+                <h3>Treatment</h3>
+                <p>Rarely, a patient may present with symptoms and not tolerate idioventricular rhythm due to atrioventricular dyssynchrony, a rapid ventricular rate, or degenerated ventricular fibrillation of idioventricular rhythm. Medical therapy may be useful in patients with biventricular failure to restore the atrial impulse by increasing the sinus rate and atrioventricular (AV) conduction. In these cases, atropine may be tried. Antiarrhythmic agents, such as amiodarone and lidocaine, may also be useful along with drugs such as verapamil or isoproterenol. In very rare cases, the use of an atrial pacemaker may be considered.</p>
+            </div>
+        </div>
+        
+        <!-- Accelerated Idioventricular Rhythm (AIVR) -->
+        <div id="accelerated-idioventricular" class="rhythm-card">
+            <h2>Accelerated Idioventricular Rhythm (AIVR)</h2>
+            <img src="https://i.postimg.cc/FHTRMh2q/Accelerated-Idioventricular-Rhythm-AIVR.png" alt="Accelerated Idioventricular Rhythm ECG" class="ecg-image">
+            <p>Accelerated idioventricular rhythm is an arrhythmia in which an ectopic pacemaker in the ventricles generates impulses at a rate higher than that of the sinus node, usually between 50 and 120 beats per minute. This rhythm usually presents a regular pattern with wide QRS complexes (greater than 120 ms) and may include fusion and capture beats.</p>
+            
+            <div class="audio-player">
+                <h4>Audio Example:</h4>
+                <audio controls preload="none">
+                    <source src="https://archive.org/download/ECG_Pathology/aivr.wav" type="audio/wav">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+            
+            <div class="treatment">
+                <h3>Treatment</h3>
+                <p>Although it is usually a benign, self-limited arrhythmia that does not require specific treatment, it is important to address the underlying causes, such as correcting electrolyte imbalances or restoring myocardial perfusion. Treatment is generally not necessary. However, in cases where it causes hemodynamic instability, atropine may be considered to increase the sinus rate and suppress the ventricular rhythm. It is also recommended to correct possible triggering factors, such as electrolyte imbalances (hypokalemia or hypomagnesemia) and myocardial ischemia.</p>
+            </div>
+        </div>
+        
+        <!-- Ventricular Tachycardia -->
+        <div id="vtach" class="rhythm-card">
+            <h2>Ventricular Tachycardia</h2>
+            <img src="https://i.postimg.cc/xCvSSRXC/Ventricular-Tachycardia.png" alt="Ventricular Tachycardia ECG" class="ecg-image">
+            <p>Ventricular tachycardia (VT) is an arrhythmia characterized by rapid heartbeats originating in the ventricles of the heart, which prevents efficient pumping of oxygenated blood to the body. It can manifest with symptoms such as palpitations, dizziness, fainting, chest pain and shortness of breath. Causes include structural heart disease, such as previous heart attacks, cardiomyopathies and valvular heart disease, as well as genetic conditions such as catecholaminergic polymorphic ventricular tachycardia.</p>
+            
+            <div class="audio-player">
+                <h4>Audio Example:</h4>
+                <audio controls preload="none">
+                    <source src="https://archive.org/download/ECG_Pathology/taquicardia-ventricular.wav" type="audio/wav">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+            
+            <div class="treatment">
+                <h3>Treatment</h3>
+                <p>Treatment options include radiofrequency ablation, a minimally invasive procedure that destroys the cells responsible for the arrhythmia; implantable cardioverter-defibrillator (ICD) implantation, which detects and corrects dangerous heart rhythms; and antiarrhythmic drugs such as sotalol, flecainide, propafenone and amiodarone to prevent recurrences.</p>
+            </div>
+        </div>
+        
+        <!-- Ventricular Fibrillation -->
+        <div id="vfib" class="rhythm-card">
+            <h2>Ventricular Fibrillation</h2>
+            <img src="https://i.postimg.cc/V6QcTTLp/Ventricular-Fibrillation.png" alt="Ventricular Fibrillation ECG" class="ecg-image">
+            <p>Ventricular fibrillation is a dangerous arrhythmia in which disorganized electrical signals cause the ventricles of the heart to contract chaotically, preventing blood from being pumped effectively to the rest of the body. This condition can cause loss of consciousness and, if not treated immediately, lead to sudden cardiac arrest. The most common causes are recent or ongoing heart attacks, cardiomyopathies, heart valve disease, and electrolyte imbalances.</p>
+            
+            <div class="audio-player">
+                <h4>Audio Example:</h4>
+                <audio controls preload="none">
+                    <source src="https://archive.org/download/ECG_Pathology/fibrilacion-ventricular.wav" type="audio/wav">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+            
+            <div class="treatment">
+                <h3>Treatment</h3>
+                <p>Immediate treatment of ventricular fibrillation is crucial and begins with cardiopulmonary resuscitation to maintain blood circulation, followed by electrical defibrillation to restore normal heart rhythm. After stabilization, antiarrhythmic drugs can be administered to prevent recurrences and the implantation of an implantable cardioverter defibrillator that monitors and corrects abnormal heart rhythms can be considered.</p>
+            </div>
+        </div>
+        
+        <!-- Paced Ventricular Rhythm -->
+        <div id="paced-ventricular" class="rhythm-card">
+            <h2>Paced Ventricular Rhythm</h2>
+            <img src="https://i.postimg.cc/GhQhDch2/Paced-Ventricular-Rhythm.png" alt="Paced Ventricular Rhythm ECG" class="ecg-image">
+            <p>A ventricular-paced rhythm refers to the electrical activity of the heart controlled by an artificial pacemaker that sends electrical impulses to the ventricle to regulate its contraction.</p>
+            
+            <div class="audio-player">
+                <h4>Audio Example:</h4>
+                <audio controls preload="none">
+                    <source src="https://archive.org/download/ECG_Pathology/ventricular-con-marcapasos.wav" type="audio/wav">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+            
+            <div class="treatment">
+                <h3>Treatment</h3>
+                <p>Management of a paced ventricular rhythm involves regular monitoring to ensure proper pacemaker function and evaluation of possible symptoms such as fatigue, dizziness, or dyspnea, which may indicate the need to adjust the device's programming. It is essential that patients with pacemakers maintain regular medical follow-up to monitor device function, make adjustments as needed, and address any symptoms or complications that may arise.</p>
             </div>
         </div>
     </div>
+</div>
+
+<script>
+    // Show the first rhythm by default
+    document.addEventListener('DOMContentLoaded', function() {
+        showRhythm('regular-sinus');
+    });
     
-    <footer>
-        <div class="container">
-            <p>Sistema de Aprendizaje de ECG © 2023 - Todos los derechos reservados</p>
-            <p>Este material es para fines educativos solamente y no sustituye el juicio clínico profesional.</p>
-        </div>
-    </footer>
-    
-    <script>
-        function openTab(tabName) {
-            // Oculta todos los contenidos de pestañas
-            var tabContents = document.getElementsByClassName("tab-content");
-            for (var i = 0; i < tabContents.length; i++) {
-                tabContents[i].classList.remove("active");
-            }
-            
-            // Desactiva todas las pestañas
-            var tabButtons = document.getElementsByClassName("nav-tab");
-            for (var i = 0; i < tabButtons.length; i++) {
-                tabButtons[i].classList.remove("active");
-            }
-            
-            // Activa la pestaña seleccionada
-            document.getElementById(tabName).classList.add("active");
-            event.currentTarget.classList.add("active");
+    function showRhythm(rhythmId) {
+        // Hide all rhythm cards
+        var cards = document.getElementsByClassName('rhythm-card');
+        for (var i = 0; i < cards.length; i++) {
+            cards[i].classList.remove('active');
         }
         
-        // Animaciones personalizadas para diferentes ritmos
-        document.addEventListener('DOMContentLoaded', function() {
-            // Podrías agregar aquí lógica para animaciones ECG más específicas
+        // Show the selected rhythm card
+        document.getElementById(rhythmId).classList.add('active');
+        
+        // Highlight the selected list item
+        var listItems = document.querySelectorAll('.rhythm-list li');
+        for (var i = 0; i < listItems.length; i++) {
+            listItems[i].style.backgroundColor = '';
+            listItems[i].style.fontWeight = '';
+        }
+        
+        // Find and highlight the clicked item
+        for (var i = 0; i < listItems.length; i++) {
+            if (listItems[i].getAttribute('onclick').includes(rhythmId)) {
+                listItems[i].style.backgroundColor = '#ffebee';
+                listItems[i].style.fontWeight = 'bold';
+                break;
+            }
+        }
+    }
+    
+    // Search functionality
+    document.getElementById('searchInput').addEventListener('input', function() {
+        var searchTerm = this.value.toLowerCase();
+        var listItems = document.querySelectorAll('.rhythm-list li');
+        
+        listItems.forEach(function(item) {
+            var text = item.textContent.toLowerCase();
+            if (text.includes(searchTerm)) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
         });
-    </script>
-</body>
-</html>
-
-
-
-<a href="index.html"><button style="margin:20px;">🔙 Volver al menú</button></a>
+    });
+</script>
