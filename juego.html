@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ECG Boxing Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #FFD1DC;
+      margin: 0;
+      padding: 20px;
+    }
+    #gameCanvas {
+      background: white;
+      border: 3px solid #ff6b6b;
+      margin: 20px auto;
+      display: block;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.3s;
+    }
+    button:hover {
+      background: #45a049;
+      transform: scale(1.05);
+    }
+    #lives {
+      font-size: 24px;
+      color: #ff0000;
+      margin: 10px;
+    }
+    #score {
+      font-size: 20px;
+      color: #333;
+      margin: 10px;
+    }
+    #question {
+      font-size: 18px;
+      margin: 15px;
+      min-height: 50px;
+    }
+    #gameInfo {
+      margin: 20px auto;
+      max-width: 600px;
+    }
+    .health-bar {
+      width: 100px;
+      height: 20px;
+      border: 2px solid #000;
+      margin: 5px auto;
+      position: relative;
+    }
+    .health-fill {
+      height: 100%;
+      background-color: #4CAF50;
+      width: 100%;
+    }
+    .character-label {
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    #ecgImage {
+      width: 800px;
+      height: auto;
+      max-height: 300px;
+      margin: 10px auto;
+      border: 1px solid #ccc;
+      display: block;
+      object-fit: contain;
+    }
+    .option-button {
+      min-width: 200px;
+      margin: 5px;
+    }
+    #treatment {
+      font-style: italic;
+      color: #555;
+      margin-top: 10px;
+      display: none;
+    }
+    #nextButton {
+      display: none;
+      background-color: #2196F3;
+      margin-top: 15px;
+    }
+    #feedback {
+      font-weight: bold;
+      margin: 10px;
+      min-height: 24px;
+    }
+    .correct {
+      color: #4CAF50;
+    }
+    .incorrect {
+      color: #F44336;
+    }
+    #quiz-container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>ECG Boxing Game 🥊</h1>
+  <p>Identify the ECG pathology to punch the lipid!</p>
+  
+  <div id="gameInfo">
+    <div>
+      <div class="character-label">Heart</div>
+      <div class="health-bar"><div id="heartHealth" class="health-fill"></div></div>
+    </div>
+    <div>
+      <div class="character-label">Lipid</div>
+      <div class="health-bar"><div id="lipidHealth" class="health-fill" style="background-color: #FFC107;"></div></div>
+    </div>
+  </div>
+  
+  <canvas id="gameCanvas" width="800" height="400"></canvas>
+  
+  <div id="quiz-container">
+    <img id="ecgImage" src="" alt="ECG Image">
+    <p id="question">What is this rhythm?</p>
+    <p id="feedback"></p>
+    <p id="treatment"></p>
+    <div id="options">
+      <button class="option-button" onclick="checkAnswer(0)"></button>
+      <button class="option-button" onclick="checkAnswer(1)"></button>
+      <button class="option-button" onclick="checkAnswer(2)"></button>
+      <button class="option-button" onclick="checkAnswer(3)"></button>
+    </div>
+    <button id="nextButton" onclick="nextQuestion()">Next Question</button>
+  </div>
+  
+  <div id="lives">❤❤❤</div>
+  <div id="score">Score: 0</div>
+  
+  <script>
+    // Game Data (All 27 ECG Pathologies with high-quality PostImage links)
+    const ecgData = [
+      {
+        name: "Regular Sinus Rhythm",
+        description: "Sinus rhythm - also known as regular sinus rhythm (RSR) or normal sinus rhythm (NSR) - is the most common adult rhythm with rates between 60-100/minute. The QRS is most often narrow with upright P waves in Lead II.",
+        treatment: "No treatment needed - this is normal!",
+        imageUrl: "https://i.postimg.cc/FHCrPDSX/Regular-Sinus-Rhythm.png",
+        options: [
+          "Regular Sinus Rhythm",
+          "Sinus Bradycardia",
+          "Sinus Tachycardia",
+          "Sinus Arrhythmia"
+        ]
+      },
+      {
+        name: "Sinus Bradycardia",
+        description: "Sinus Bradycardia with rates greater than 50/minute may be well tolerated by healthy adults. Athletes may routinely be in sinus bradycardia due to an optimal cardiac stroke volume that requires less HR to yield acceptable cardiac output.",
+        treatment: "Treatment only needed if symptomatic (atropine, pacing)",
+        imageUrl: "https://i.postimg.cc/DfQ2V2Gg/Sinus-Bradycardia.png",
+        options: [
+          "Sinus Bradycardia",
+          "Sinus Arrest",
+          "Junctional Rhythm",
+          "Second Degree AV Block Type II"
+        ]
+      },
+      {
+        name: "Sinus Tachycardia",
+        description: "Sinus Tachycardia most often results from increased sympathetic stimulation (i.e. due to pain, fever, increased oxygen demand, and/or hypovolemia). It usually has a narrow QRS. The rate is often limited to below 150 / minute.",
+        treatment: "Treat underlying cause (pain, fever, hypovolemia, etc.)",
+        imageUrl: "https://i.postimg.cc/Jz0mBZ26/Sinus-Tachycardia.png",
+        options: [
+          "Sinus Tachycardia",
+          "Supraventricular Tachycardia",
+          "Atrial Flutter",
+          "Ventricular Tachycardia"
+        ]
+      },
+      {
+        name: "Sinus Arrhythmia",
+        description: "Sinus Arrhythmia is most often a benign rhythm, common in children and less common with older adults. The irregular pattern of this rhythm fluctuates with inspiration (HR increases) and expiration (HR decreases).",
+        treatment: "No treatment needed - this is typically benign",
+        imageUrl: "https://i.postimg.cc/rs9c5JTb/Sinus-Arrhythmia.png",
+        options: [
+          "Sinus Arrhythmia",
+          "Atrial Fibrillation",
+          "Wandering Pacemaker",
+          "Sinus Exit Block"
+        ]
+      },
+      {
+        name: "Sinus Exit Block",
+        description: "Sinus exit block (sinoatrial block) results from blocked sinus impulses - impulses not getting through to depolarize the atria. While the sinus is firing on schedule, the tissue around the SA node is not carrying the impulse.",
+        treatment: "Treatment depends on frequency/duration of blocks (may need pacemaker)",
+        imageUrl: "https://i.postimg.cc/SNymkw7p/Sinus-Exit-Block.png",
+        options: [
+          "Sinus Exit Block",
+          "Sinus Arrest",
+          "Second Degree AV Block Type I",
+          "Third Degree AV Block"
+        ]
+      },
+      {
+        name: "Sinus Arrest",
+        description: "Sinus Arrest (a.k.a. sinus pause) occurs when the SA node fails to fire. The resulting pause is often NOT equal to the multiple of P-P intervals seen in Sinus Exit Block.",
+        treatment: "Treatment depends on frequency/duration (may need pacemaker)",
+        imageUrl: "https://i.postimg.cc/kGCqVH0K/Sinus-Arrest.png",
+        options: [
+          "Sinus Arrest",
+          "Sinus Exit Block",
+          "Junctional Rhythm",
+          "Third Degree AV Block"
+        ]
+      },
+      {
+        name: "NSR with Premature Atrial Complexes",
+        description: "Premature Atrial Complexes or PAC result from irritability to the atria resulting in increased automaticity of atrial tissue. Since the atria initiate an impulse earlier than expected from the SA node, this is a premature complex.",
+        treatment: "Typically benign, treat underlying cause if symptomatic",
+        imageUrl: "https://i.postimg.cc/HWbLpwqb/NSR-with-Premature-Atrial-Complexes.png",
+        options: [
+          "NSR with Premature Atrial Complexes",
+          "NSR with Premature Ventricular Complex",
+          "Atrial Fibrillation",
+          "Atrial Flutter"
+        ]
+      },
+      {
+        name: "Supraventricular Tachycardia",
+        description: "Supraventricular tachycardia is an ominous rhythm with rates often between 170-230 per minute. The telltale sign of supraventricular tachycardia is the narrow QRS which defines its supraventricular origin and its regular, rapid pattern.",
+        treatment: "Vagal maneuvers, adenosine, cardioversion if unstable",
+        imageUrl: "https://i.postimg.cc/SxP4Lj0y/Supraventricular-Tachycardia.png",
+        options: [
+          "Supraventricular Tachycardia",
+          "Ventricular Tachycardia",
+          "Atrial Flutter",
+          "Sinus Tachycardia"
+        ]
+      },
+      {
+        name: "Atrial Fibrillation",
+        description: "Atrial fibrillation is a chaotic rhythm with recognizable QRS complexes. The chaotic rhythm pattern and the absence of P waves are the hallmarks of this dysrhythmia.",
+        treatment: "Rate control (beta-blockers, CCBs), anticoagulation for stroke prevention",
+        imageUrl: "https://i.postimg.cc/7YMbN3Xq/Atrial-Fibrillation.png",
+        options: [
+          "Atrial Fibrillation",
+          "Atrial Flutter",
+          "Ventricular Fibrillation",
+          "Supraventricular Tachycardia"
+        ]
+      },
+      {
+        name: "Atrial Flutter",
+        description: "Atrial flutter results from the development of a reentry circuit within the atria generating a loop that discharges impulses at a flutter rate of 250-350 / minute.",
+        treatment: "Rate control, anticoagulation, possible cardioversion or ablation",
+        imageUrl: "https://i.postimg.cc/q7gR09r7/Atrial-Flutter.png",
+        options: [
+          "Atrial Flutter",
+          "Atrial Fibrillation",
+          "Supraventricular Tachycardia",
+          "Ventricular Tachycardia"
+        ]
+      },
+      {
+        name: "Paced Atrial rhythm",
+        description: "Atrial paced rhythm results from the electronic pacing of an atrium. Note the vertical spike before the P wave.",
+        treatment: "Monitor pacemaker function, adjust settings as needed",
+        imageUrl: "https://i.postimg.cc/dtvVD7Fp/Paced-Atrial-rhythm.png",
+        options: [
+          "Paced Atrial rhythm",
+          "Paced Ventricular Rhythm",
+          "Junctional Rhythm",
+          "Accelerated Junctional"
+        ]
+      },
+      {
+        name: "NSR with First Degree AV Block",
+        description: "First degree AV block results from a prolonged transmission of the electrical impulse through the AV junction (AV node and Bundle of His). The significant finding of this rhythm is a prolonged PR interval of more than .20 seconds.",
+        treatment: "Typically benign, monitor for progression",
+        imageUrl: "https://i.postimg.cc/nrKV0x43/NSR-with-First-Degree-AV-Block.png",
+        options: [
+          "NSR with First Degree AV Block",
+          "Second Degree AV Block Type I",
+          "Third Degree AV Block",
+          "Sinus Bradycardia"
+        ]
+      },
+      {
+        name: "Second Degree AV Block Type I",
+        description: "Second degree AV block Type I (Wenckebach or Mobitz Type I) results from a cyclical and progressive conduction delay through the AV junction.",
+        treatment: "Monitor, atropine if symptomatic, rarely needs pacemaker",
+        imageUrl: "https://i.postimg.cc/vm1QCf7g/Second-Degree-AV-Block-Type-I.png",
+        options: [
+          "Second Degree AV Block Type I",
+          "Second Degree AV Block Type II",
+          "Third Degree AV Block",
+          "NSR with First Degree AV Block"
+        ]
+      },
+      {
+        name: "Second Degree AV Block Type II",
+        description: "Second Degree AV Block Type II is typically caused by an intermittent block below the AV node. One or more QRS complexes are dropped with PR intervals that do not change.",
+        treatment: "Often requires pacemaker due to risk of complete heart block",
+        imageUrl: "https://i.postimg.cc/tgLXbJDr/Second-Degree-AV-Block-Type-II.png",
+        options: [
+          "Second Degree AV Block Type II",
+          "Second Degree AV Block Type I",
+          "Third Degree AV Block",
+          "Sinus Exit Block"
+        ]
+      },
+      {
+        name: "Second Degree AV Block with 2:1 Conduction",
+        description: "Second Degree AV Block with 2:1 conduction is a special case with each alternative P wave NOT paired with a QRS complex. The PR interval remains constant.",
+        treatment: "Requires close monitoring, may need pacemaker",
+        imageUrl: "https://i.postimg.cc/LXLm8Sbm/Second-degree-AV-lock-with-intermittent-driving.png",
+        options: [
+          "Second Degree AV Block with 2:1 Conduction",
+          "Second Degree AV Block Type II",
+          "Third Degree AV Block",
+          "Sinus Bradycardia"
+        ]
+      },
+      {
+        name: "Third Degree AV Block",
+        description: "Third degree AV block (complete heart block) is often an ominous rhythm requiring close monitoring for hemodynamic compromise.",
+        treatment: "Immediate pacing (transcutaneous or transvenous), atropine temporary measure",
+        imageUrl: "https://i.postimg.cc/25BD0mmn/Third-Degree-AV-Block.png",
+        options: [
+          "Third Degree AV Block",
+          "Second Degree AV Block Type II",
+          "Sinus Arrest",
+          "Junctional Rhythm"
+        ]
+      },
+      {
+        name: "Premature Junctional Complex (PJC)",
+        description: "A PJC arises from an irritable focus within the AV junction. Characteristics include an absent or inverted P wave in lead II and a shortened PR interval.",
+        treatment: "Typically benign, treat underlying cause if frequent",
+        imageUrl: "https://i.postimg.cc/jSSqQGLh/Premature-Junctional-Complex-PJC.png",
+        options: [
+          "Premature Junctional Complex (PJC)",
+          "Premature Ventricular Complex",
+          "Junctional Rhythm",
+          "Accelerated Junctional"
+        ]
+      },
+      {
+        name: "Junctional Rhythm",
+        description: "Junctional rhythm originates from the AV junction (AV node and Bundle of His). The expected pacemaker rate of the AV junction is 40-60 / minute.",
+        treatment: "Atropine if symptomatic, pacing if persistent",
+        imageUrl: "https://i.postimg.cc/gJZ2L8nF/Junctional-Rhythm.png",
+        options: [
+          "Junctional Rhythm",
+          "Idioventricular Rhythm",
+          "Sinus Bradycardia",
+          "Third Degree AV Block"
+        ]
+      },
+      {
+        name: "Accelerated Junctional",
+        description: "Accelerated junctional rhythm results from enhanced automaticity, increased sympathetic nervous system activity or ischemia.",
+        treatment: "Treat underlying cause, usually well tolerated",
+        imageUrl: "https://i.postimg.cc/2Sky91Xh/Accelerated-Junctional.png",
+        options: [
+          "Accelerated Junctional",
+          "Junctional Tachycardia",
+          "Sinus Tachycardia",
+          "Supraventricular Tachycardia"
+        ]
+      },
+      {
+        name: "Junctional Tachycardia",
+        description: "Junctional tachycardia results from enhanced automaticity, increased sympathetic activity and ischemia.",
+        treatment: "Treat underlying cause, may need beta-blockers or calcium channel blockers",
+        imageUrl: "https://i.postimg.cc/GtnhFtyB/Junctional-Tachycardia.png",
+        options: [
+          "Junctional Tachycardia",
+          "Supraventricular Tachycardia",
+          "Ventricular Tachycardia",
+          "Accelerated Junctional"
+        ]
+      },
+      {
+        name: "Wandering Pacemaker",
+        description: "A wandering pacemaker rhythm is a supraventricular rhythm with varying locations of impulse formation resulting in three or more different P waves.",
+        treatment: "Typically benign, no treatment needed",
+        imageUrl: "https://i.postimg.cc/qqpHB3KG/Wandering-Pacemaker.png",
+        options: [
+          "Wandering Pacemaker",
+          "Atrial Fibrillation",
+          "Sinus Arrhythmia",
+          "Multifocal Atrial Tachycardia"
+        ]
+      },
+      {
+        name: "Sinus Rhythm with Premature Ventricular Complex",
+        description: "Premature ventricular complexes (PVC) often represent increased ventricular automaticity or reentry phenonomen. PVCs arrive earlier than expected and is usually wide (.12 seconds or more).",
+        treatment: "Treat underlying cause if symptomatic, beta-blockers if frequent",
+        imageUrl: "https://i.postimg.cc/fTBDLBBS/Sinus-Rhythm-with-Premature-Ventricular-Complex.png",
+        options: [
+          "Sinus Rhythm with Premature Ventricular Complex",
+          "Sinus Rhythm with Premature Atrial Complexes",
+          "Ventricular Tachycardia",
+          "Idioventricular Rhythm"
+        ]
+      },
+      {
+        name: "Idioventricular Rhythm (IVR)",
+        description: "Idioventricular rhythm (IVR) occurs when the SA and AV nodes are either NOT firing or firing slower than the ventricular pacemaker rate.",
+        treatment: "Atropine, pacing, epinephrine if unstable",
+        imageUrl: "https://i.postimg.cc/hGwGGp41/Idioventricular-Rhythm-IVR.png",
+        options: [
+          "Idioventricular Rhythm (IVR)",
+          "Junctional Rhythm",
+          "Third Degree AV Block",
+          "Ventricular Fibrillation"
+        ]
+      },
+      {
+        name: "Accelerated Idioventricular Rhythm (AIVR)",
+        description: "Accelerated idioventricular rhythm (AIVR) is a ventricular rhythm occuring at a rate between 41-100 / minute.",
+        treatment: "Usually transient and well-tolerated, monitor for deterioration",
+        imageUrl: "https://i.postimg.cc/FHTRMh2q/Accelerated-Idioventricular-Rhythm-AIVR.png",
+        options: [
+          "Accelerated Idioventricular Rhythm (AIVR)",
+          "Ventricular Tachycardia",
+          "Idioventricular Rhythm",
+          "Junctional Tachycardia"
+        ]
+      },
+      {
+        name: "Ventricular Tachycardia",
+        description: "Ventricular tachycardia (VT) often results in hemodynamic compromise. What makes this rhythm more ominous is its tendency to transition into ventricular fibrillation.",
+        treatment: "Immediate cardioversion if unstable, amiodarone if stable",
+        imageUrl: "https://i.postimg.cc/xCvSSRXC/Ventricular-Tachycardia.png",
+        options: [
+          "Ventricular Tachycardia",
+          "Supraventricular Tachycardia",
+          "Accelerated Idioventricular Rhythm",
+          "Ventricular Fibrillation"
+        ]
+      },
+      {
+        name: "Ventricular Fibrillation",
+        description: "Ventricular fibrillation (VFib) is a chaotic rhythm originating in the ventricles, resulting in no cardiac output.",
+        treatment: "Immediate defibrillation, CPR, epinephrine, amiodarone",
+        imageUrl: "https://i.postimg.cc/V6QcTTLp/Ventricular-Fibrillation.png",
+        options: [
+          "Ventricular Fibrillation",
+          "Atrial Fibrillation",
+          "Ventricular Tachycardia",
+          "Asystole"
+        ]
+      },
+      {
+        name: "Paced Ventricular Rhythm",
+        description: "Ventricular paced rhythm results from the electronic pacing of a ventricle. Note the vertical spike before the QRS complex.",
+        treatment: "Monitor pacemaker function, adjust settings as needed",
+        imageUrl: "https://i.postimg.cc/GhQhDch2/Paced-Ventricular-Rhythm.png",
+        options: [
+          "Paced Ventricular Rhythm",
+          "Paced Atrial rhythm",
+          "Ventricular Tachycardia",
+          "Accelerated Idioventricular Rhythm"
+        ]
+      }
+    ];
+
+    // Game Variables
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    let lives = 3;
+    let score = 0;
+    let currentQuestion = 0;
+    let correctAnswer = 0;
+    let gameActive = true;
+    let lipidHealth = 100;
+    let answeredCorrectly = false;
+    
+    // Animation Variables
+    let heartPunching = false;
+    let lipidPunching = false;
+    let heartX = 200;
+    let lipidX = 600;
+    let gameOverState = false;
+    let victoryState = false;
+    let animationFrame = 0;
+    let shakeIntensity = 0;
+    
+    // Heart and Lipid Objects
+    const heart = {
+      x: heartX,
+      y: 200,
+      size: 60,
+      health: 100,
+      draw() {
+        // Heart body
+        ctx.fillStyle = "#ff0000";
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Boxing gloves (animate when punching)
+        const gloveOffset = heartPunching ? 
+          (animationFrame % 10 < 5 ? 10 : 0) : 0;
+          
+        ctx.fillStyle = "#ffffff";
+        // Left glove
+        ctx.fillRect(
+          this.x - 45 - gloveOffset, 
+          this.y - 15, 
+          30, 
+          20
+        );
+        // Right glove
+        ctx.fillRect(
+          this.x + 15 + gloveOffset, 
+          this.y - 15, 
+          30, 
+          20
+        );
+        
+        // Eyes
+        ctx.fillStyle = "white";
+        ctx.beginPath();
+        ctx.arc(this.x - 15, this.y - 10, 8, 0, Math.PI * 2);
+        ctx.arc(this.x + 15, this.y - 10, 8, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.fillStyle = "black";
+        ctx.beginPath();
+        ctx.arc(this.x - 15, this.y - 10, 4, 0, Math.PI * 2);
+        ctx.arc(this.x + 15, this.y - 10, 4, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Mouth (changes based on health)
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        if (this.health > 70) {
+          // Smile
+          ctx.arc(this.x, this.y + 10, 15, 0, Math.PI);
+        } else if (this.health > 30) {
+          // Neutral
+          ctx.moveTo(this.x - 15, this.y + 10);
+          ctx.lineTo(this.x + 15, this.y + 10);
+        } else {
+          // Frown
+          ctx.arc(this.x, this.y + 25, 15, Math.PI, 0, true);
+        }
+        ctx.stroke();
+      }
+    };
+
+    const lipid = {
+      x: lipidX,
+      y: 200,
+      size: 50,
+      draw() {
+        // Lipid body
+        ctx.fillStyle = "#FFC107";
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Boxing gloves (animate when punching)
+        const gloveOffset = lipidPunching ? 
+          (animationFrame % 10 < 5 ? 10 : 0) : 0;
+          
+        ctx.fillStyle = "#795548";
+        // Left glove
+        ctx.fillRect(
+          this.x - 45 + gloveOffset, 
+          this.y - 15, 
+          30, 
+          20
+        );
+        // Right glove
+        ctx.fillRect(
+          this.x + 15 - gloveOffset, 
+          this.y - 15, 
+          30, 
+          20
+        );
+        
+        // Angry eyes
+        ctx.fillStyle = "black";
+        ctx.beginPath();
+        ctx.moveTo(this.x - 20, this.y - 15);
+        ctx.lineTo(this.x - 10, this.y - 5);
+        ctx.moveTo(this.x - 10, this.y - 15);
+        ctx.lineTo(this.x - 20, this.y - 5);
+        
+        ctx.moveTo(this.x + 20, this.y - 15);
+        ctx.lineTo(this.x + 10, this.y - 5);
+        ctx.moveTo(this.x + 10, this.y - 15);
+        ctx.lineTo(this.x + 20, this.y - 5);
+        ctx.stroke();
+        
+        // Mouth
+        ctx.beginPath();
+        ctx.arc(this.x, this.y + 10, 20, 0.1 * Math.PI, 0.9 * Math.PI);
+        ctx.stroke();
+      }
+    };
+
+    // Game Functions
+    function draw() {
+      // Clear canvas with shake effect if damaged
+      if (shakeIntensity > 0) {
+        ctx.fillStyle = "rgba(255, 200, 200, 0.3)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        shakeIntensity -= 0.5;
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+      
+      // Apply shake offset if active
+      const shakeX = shakeIntensity > 0 ? 
+        (Math.random() * shakeIntensity * 2 - shakeIntensity) : 0;
+      const shakeY = shakeIntensity > 0 ? 
+        (Math.random() * shakeIntensity * 2 - shakeIntensity) : 0;
+      
+      ctx.save();
+      ctx.translate(shakeX, shakeY);
+      
+      // Draw characters
+      heart.draw();
+      lipid.draw();
+      
+      // Draw health bars in canvas (duplicate of HTML ones)
+      drawHealthBars();
+      
+      // Draw game over or victory message
+      if (gameOverState) {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "white";
+        ctx.font = "40px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("GAME OVER", canvas.width/2, canvas.height/2 - 40);
+        ctx.font = "24px Arial";
+        ctx.fillText(`Final Score: ${score}`, canvas.width/2, canvas.height/2 + 20);
+        ctx.fillText("Refresh to play again", canvas.width/2, canvas.height/2 + 60);
+      }
+      
+      if (victoryState) {
+        ctx.fillStyle = "rgba(0, 100, 0, 0.7)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "white";
+        ctx.font = "40px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("VICTORY!", canvas.width/2, canvas.height/2 - 40);
+        ctx.font = "24px Arial";
+        ctx.fillText(`You defeated the lipid with ${score} points!`, canvas.width/2, canvas.height/2 + 20);
+        ctx.fillText("Refresh to play again", canvas.width/2, canvas.height/2 + 60);
+      }
+      
+      ctx.restore();
+      
+      // Update animation frame
+      animationFrame++;
+    }
+
+    function drawHealthBars() {
+      // Heart health bar
+      ctx.fillStyle = "#4CAF50";
+      ctx.fillRect(50, 50, heart.health * 2, 20);
+      ctx.strokeStyle = "black";
+      ctx.strokeRect(50, 50, 200, 20);
+      
+      // Lipid health bar
+      ctx.fillStyle = "#FFC107";
+      ctx.fillRect(550, 50, lipidHealth * 2, 20);
+      ctx.strokeStyle = "black";
+      ctx.strokeRect(550, 50, 200, 20);
+      
+      // Labels
+      ctx.fillStyle = "black";
+      ctx.font = "16px Arial";
+      ctx.fillText("Heart", 50, 45);
+      ctx.fillText("Lipid", 550, 45);
+    }
+
+    function updateHealthBars() {
+      document.getElementById("heartHealth").style.width = `${heart.health}%`;
+      document.getElementById("lipidHealth").style.width = `${lipidHealth}%`;
+      
+      // Change color based on health
+      document.getElementById("heartHealth").style.backgroundColor = 
+        heart.health > 70 ? "#4CAF50" : 
+        heart.health > 30 ? "#FFC107" : "#F44336";
+    }
+
+    function checkAnswer(answer) {
+      if (!gameActive || answeredCorrectly) return;
+      
+      const feedback = document.getElementById("feedback");
+      const treatment = document.getElementById("treatment");
+      const nextButton = document.getElementById("nextButton");
+      const options = document.getElementById("options");
+      
+      if (answer === correctAnswer) {
+        // Correct answer
+        answeredCorrectly = true;
+        score += 10;
+        heartPunching = true;
+        lipidHealth -= 10; // Reduce lipid health by 10% as requested
+        
+        feedback.innerHTML = "Correct! <span class='correct'>✓</span>";
+        feedback.className = "correct";
+        
+        // Show description and treatment
+        const q = ecgData[currentQuestion];
+        document.getElementById("question").textContent = q.description;
+        treatment.textContent = `Treatment: ${q.treatment}`;
+        treatment.style.display = "block";
+        
+        // Show next button and hide options
+        nextButton.style.display = "inline-block";
+        options.style.display = "none";
+        
+        // Animate heart moving forward
+        animatePunch(true);
+        
+        // Update UI
+        document.getElementById("score").innerText = `Score: ${score}`;
+        
+        // Check for victory
+        if (lipidHealth <= 0) {
+          setTimeout(() => victory(), 1000);
+          return;
+        }
+      } else {
+        // Wrong answer
+        lives--;
+        lipidPunching = true;
+        heart.health -= 20;
+        shakeIntensity = 10;
+        
+        feedback.innerHTML = `Incorrect! The correct answer was: ${ecgData[currentQuestion].name} <span class='incorrect'>✗</span>`;
+        feedback.className = "incorrect";
+        
+        // Show description and treatment immediately for wrong answers
+        const q = ecgData[currentQuestion];
+        document.getElementById("question").textContent = q.description;
+        treatment.textContent = `Treatment: ${q.treatment}`;
+        treatment.style.display = "block";
+        
+        // Show next button and hide options
+        nextButton.style.display = "inline-block";
+        options.style.display = "none";
+        
+        // Animate lipid moving forward
+        animatePunch(false);
+        
+        // Update lives display
+        document.getElementById("lives").innerHTML = "❤".repeat(lives);
+        
+        // Check for game over
+        if (heart.health <= 0 || lives <= 0) {
+          setTimeout(() => gameOver(), 1000);
+          return;
+        }
+      }
+      
+      updateHealthBars();
+    }
+
+    function animatePunch(isHeartPunching) {
+      const startTime = Date.now();
+      const duration = 500; // ms
+      const originalHeartX = 200;
+      const originalLipidX = 600;
+      
+      function updateAnimation() {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        if (isHeartPunching) {
+          // Heart moves toward lipid
+          heart.x = originalHeartX + (400 * progress);
+          lipid.x = originalLipidX + (20 * progress);
+        } else {
+          // Lipid moves toward heart
+          lipid.x = originalLipidX - (400 * progress);
+          heart.x = originalHeartX - (20 * progress);
+        }
+        
+        draw();
+        
+        if (progress < 1) {
+          requestAnimationFrame(updateAnimation);
+        } else {
+          // Return to original positions
+          const returnStart = Date.now();
+          const returnDuration = 300;
+          
+          function returnAnimation() {
+            const returnElapsed = Date.now() - returnStart;
+            const returnProgress = Math.min(returnElapsed / returnDuration, 1);
+            
+            if (isHeartPunching) {
+              heart.x = originalHeartX + (400 * (1 - returnProgress));
+              lipid.x = originalLipidX + (20 * (1 - returnProgress));
+            } else {
+              lipid.x = originalLipidX - (400 * (1 - returnProgress));
+              heart.x = originalHeartX - (20 * (1 - returnProgress));
+            }
+            
+            draw();
+            
+            if (returnProgress < 1) {
+              requestAnimationFrame(returnAnimation);
+            }
+          }
+          
+          requestAnimationFrame(returnAnimation);
+        }
+      }
+      
+      requestAnimationFrame(updateAnimation);
+    }
+
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function nextQuestion() {
+      if (!gameActive) return;
+      
+      answeredCorrectly = false;
+      
+      // Hide feedback and treatment, show options
+      document.getElementById("feedback").textContent = "";
+      document.getElementById("treatment").style.display = "none";
+      document.getElementById("nextButton").style.display = "none";
+      document.getElementById("options").style.display = "block";
+      
+      // Randomly select next question
+      currentQuestion = Math.floor(Math.random() * ecgData.length);
+      const q = ecgData[currentQuestion];
+      
+      // Set correct answer (random position)
+      const shuffledOptions = shuffleArray([...q.options]);
+      correctAnswer = shuffledOptions.indexOf(q.name);
+      
+      // Update question display (show just the image initially)
+      document.getElementById("ecgImage").src = q.imageUrl;
+      document.getElementById("question").textContent = "What is this rhythm?";
+      
+      // Update button labels with shuffled options
+      const buttons = document.querySelectorAll("#options button.option-button");
+      for (let i = 0; i < buttons.length; i++) {
+        buttons[i].textContent = shuffledOptions[i];
+      }
+      
+      draw();
+    }
+
+    function gameOver() {
+      gameActive = false;
+      gameOverState = true;
+      document.getElementById("quiz-container").style.display = "none";
+      draw();
+    }
+
+    function victory() {
+      gameActive = false;
+      victoryState = true;
+      document.getElementById("quiz-container").style.display = "none";
+      draw();
+    }
+
+    // Initialize game
+    function init() {
+      updateHealthBars();
+      nextQuestion();
+      
+      // Start game loop
+      function gameLoop() {
+        draw();
+        requestAnimationFrame(gameLoop);
+      }
+      
+      gameLoop();
+    }
+
+    // Start the game when page loads
+    window.onload = init;
+  </script>
+</body>
+</html>

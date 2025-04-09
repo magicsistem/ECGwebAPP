@@ -1,0 +1,97 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Cardiac Monitoring Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f2f5;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+    .header {
+      background-color: #c1121f;
+      color: white;
+      padding: 30px;
+      position: relative;
+    }
+    .heart-container {
+      position: absolute;
+      top: 15px;
+      right: 30px;
+      animation: heartbeat 1.5s infinite;
+    }
+    .heart {
+      width: 60px;
+      height: 60px;
+      position: relative;
+    }
+    .heart:before, .heart:after {
+      content: "";
+      position: absolute;
+      width: 30px;
+      height: 48px;
+      background: white;
+      border-radius: 30px 30px 0 0;
+    }
+    .heart:before {
+      left: 30px;
+      transform: rotate(-45deg);
+      transform-origin: 0 100%;
+    }
+    .heart:after {
+      left: 0;
+      transform: rotate(45deg);
+      transform-origin: 100% 100%;
+    }
+    @keyframes heartbeat {
+      0% { transform: scale(1); }
+      25% { transform: scale(1.1); }
+      50% { transform: scale(1); }
+      75% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    .main-menu {
+      margin-top: 60px;
+    }
+    .main-menu button {
+      background-color: #c1121f;
+      color: white;
+      border: none;
+      padding: 20px 40px;
+      font-size: 20px;
+      margin: 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .main-menu button:hover {
+      background-color: #780000;
+    }
+    .ecg-decoration {
+      height: 40px;
+      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20"><path d="M0,10 L10,10 L15,0 L20,15 L25,5 L30,10 L40,10 L45,0 L50,20 L55,0 L60,10 L70,10 L75,0 L80,15 L85,5 L90,10 L100,10" stroke="%23ff6b6b" fill="none" stroke-width="1.5"/></svg>') repeat-x;
+      animation: ecgMove 8s linear infinite;
+    }
+    @keyframes ecgMove {
+      0% { background-position: 0 0; }
+      100% { background-position: -100px 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Cardiac Monitoring Dashboard</h1>
+    <div class="heart-container"><div class="heart"></div></div>
+    <div class="ecg-decoration"></div>
+  </div>
+  <div class="main-menu">
+    <button onclick="location.href='juego.html'">🎮 Juego ECG</button>
+    <button onclick="location.href='prediccion.html'">🧪 Predicción</button>
+    <button onclick="location.href='aprendizaje.html'">📚 Aprendizaje</button>
+  </div>
+</body>
+</html>
